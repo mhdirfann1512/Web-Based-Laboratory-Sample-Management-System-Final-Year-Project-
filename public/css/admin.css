@@ -1,0 +1,84 @@
+/* Admin-specific styles */
+.admin-feature {
+  border-top: 4px solid var(--danger-color);
+  position: relative;
+}
+
+.admin-feature::before {
+  content: "ADMIN";
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: var(--danger-color);
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.admin-feature .card-icon i {
+  color: var(--danger-color);
+}
+
+.admin-feature .card-content h3 {
+  color: var(--danger-color);
+}
+
+.admin-feature:hover {
+  border-top-color: #c82333;
+}
+
+.admin-feature:hover .card-icon i {
+  color: #c82333;
+}
+
+.admin-feature:hover .card-content h3 {
+  color: #c82333;
+}
+
+/* System status indicators */
+.system-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--success-color);
+}
+
+.status-indicator.warning {
+  background: var(--warning-color);
+}
+
+.status-indicator.error {
+  background: var(--danger-color);
+}
+
+/* Admin navigation enhancements */
+.nav-links .user-info i.fa-user-shield {
+  color: var(--danger-color);
+}
+
+/* Admin dashboard specific overrides */
+.admin-dashboard .page-header h1 {
+  color: var(--danger-color);
+}
+
+.admin-dashboard .stat-value {
+  color: var(--danger-color);
+}
+
+/* Responsive adjustments for admin features */
+@media (max-width: 768px) {
+  .admin-feature::before {
+    top: 0.5rem;
+    right: 0.5rem;
+    font-size: 0.6rem;
+  }
+}

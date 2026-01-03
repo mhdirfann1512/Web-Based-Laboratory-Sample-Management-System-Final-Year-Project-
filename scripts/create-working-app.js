@@ -1,0 +1,533 @@
+const fs = require("fs")
+const path = require("path")
+
+console.log("🔧 Creating working app.js file...")
+
+// Create backup of current app.js
+if (fs.existsSync("app.js")) {
+  const backupName = `app.js.backup.${Date.now()}`
+  fs.copyFileSync("app.js", backupName)
+  console.log(`📁 Backup created: ${backupName}`)
+}
+
+// Complete working app.js content
+const appContent = `require("dotenv").config()
+const express = require("express")
+const mysql = require("mysql2")
+const bodyParser = require("body-parser")
+const bcrypt = require("bcryptjs")
+const session = require("express-session")
+const path = require("path")
+const crypto = require("crypto")
+const nodemailer = require("nodemailer")
+const fs = require("fs")
+
+// Import upload middleware
+const upload = require("./middleware/upload")
+
+const app = express()
+
+// Database connection using environment variables
+const db = mysql.createConnection({
+  host: process.env.DB_HOST || "localhost",
+  user: process.env.DB_USER || "root",
+  password: process.env.DB_PASSWORD || "",
+  database: process.env.DB_NAME || "fyp2",
+})
+
+db.connect((err) => {
+  if (err) {
+    console.error("Database connection failed:", err)
+    process.exit(1)
+  }
+  console.log("Connected to database")
+})
+
+// Email configuration using environment variables
+const transporter = nodemailer.createTransporter({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+})
+
+transporter.verify((error) => {
+  if (error) {
+    console.error("Email configuration error:", error)
+  } else {
+    console.log("Email server is ready")
+  }
+})
+
+// Middleware
+app.use(bodyParser.urlencoded({ extended: true }))
+app.use(bodyParser.json())
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "fallback_secret_key",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: false,
+      maxAge: 24 * 60 * 60 * 1000,
+    },
+  })
+)
+
+// Serve static files
+app.use(express.static("public"))
+
+// Routes
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public/html/home.html"))
+})
+
+app.get("/login", (req, res) => {
+  res.sendFile(path.join(__dirname, "public/html/login.html"))
+})
+
+app.get("/register", (req, res) => {
+  res.sendFile(path.join(__dirname, "public/html/register.html"))
+})
+
+app.get("/forgot-password", (req, res) => {
+  res.sendFile(path.join(__dirname, "public/html/forgot-password.html"))
+})
+
+app.get("/verify-otp", (req, res) => {
+  res.sendFile(path.join(__dirname, "public/html/verify-otp.html"))
+})
+
+app.get("/reset-password", (req, res) => {
+  res.sendFile(path.join(__dirname, "public/html/reset-password.html"))
+})
+
+// Staff registration
+app.post("/register", async (req, res) => {
+  const { username, email, password, full_name, phone_number, department } = req.body
+
+  try {
+    if (!username || !email || !password || !full_name || !phone_number || !department) {
+      return res.status(400).send("All fields are required")
+    }
+
+    const [existingUser] = await db
+      .promise()
+      .query("SELECT * FROM staff WHERE email = ? OR username = ?", [email, username])
+
+    if (existingUser.length > 0) {
+      return res.status(400).send("Username or email already exists")
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12)
+
+    await db
+      .promise()
+      .query(
+        "INSERT INTO staff (username, email, password, full_name, phone_number, department) VALUES (?, ?, ?, ?, ?, ?)",
+        [username, email, hashedPassword, full_name, phone_number, department]
+      )
+
+    res.redirect("/login")
+  } catch (err) {
+    console.error("Registration error:", err)
+    res.status(500).send("Error in registration")
+  }
+})
+
+// Login for both admin and staff
+app.post("/login", async (req, res) => {
+  const { username, password, userType } = req.body
+
+  try {
+    if (!username || !password || !userType) {
+      return res.status(400).send("All fields are required")
+    }
+
+    const table = userType === "admin" ? "admin" : "staff"
+    const idField = userType === "admin" ? "admin_id" : "staff_id"
+
+    const [users] = await db.promise().query(\`SELECT * FROM \${table} WHERE username = ?\`, [username])
+
+    if (users.length === 0) {
+      return res.status(400).send("User not found")
+    }
+
+    const user = users[0]
+    const isMatch = await bcrypt.compare(password, user.password)
+
+    if (!isMatch) {
+      return res.status(400).send("Invalid credentials")
+    }
+
+    req.session.user = {
+      id: user[idField],
+      username: user.username,
+      email: user.email,
+      type: userType,
+    }
+
+    res.redirect(userType === "admin" ? "/admin-dashboard" : "/staff-dashboard")
+  } catch (err) {
+    console.error("Login error:", err)
+    res.status(500).send("Error in login")
+  }
+})
+
+// Forgot password - Send OTP
+app.post("/forgot-password", async (req, res) => {
+  const { userType, contactMethod, contact } = req.body
+
+  try {
+    if (!userType || !contactMethod || !contact) {
+      return res.status(400).send("All fields are required")
+    }
+
+    const table = userType === "admin" ? "admin" : "staff"
+    const field = contactMethod === "email" ? "email" : "phone_number"
+
+    const [users] = await db.promise().query(\`SELECT * FROM \${table} WHERE \${field} = ?\`, [contact])
+
+    if (users.length === 0) {
+      return res.status(400).send("User not found with this " + contactMethod)
+    }
+
+    const user = users[0]
+
+    const otp = crypto.randomInt(100000, 999999).toString()
+    const otpExpiry = new Date(Date.now() + 15 * 60000)
+
+    await db
+      .promise()
+      .query(\`UPDATE \${table} SET reset_otp = ?, otp_expiry = ? WHERE \${field} = ?\`, [otp, otpExpiry, contact])
+
+    if (contactMethod === "email") {
+      await sendOTPEmail(contact, otp, user.full_name || user.username)
+    } else {
+      await sendOTPSMS(contact, otp)
+    }
+
+    res.redirect(\`/verify-otp?email=\${encodeURIComponent(contact)}&type=\${userType}\`)
+  } catch (err) {
+    console.error("Forgot password error:", err)
+    res.status(500).send("Error sending OTP")
+  }
+})
+
+// Verify OTP
+app.post("/verify-otp", async (req, res) => {
+  const { email, otp, userType } = req.body
+
+  try {
+    if (!email || !otp || !userType) {
+      return res.status(400).send("Email, OTP, and user type are required")
+    }
+
+    const table = userType === "admin" ? "admin" : "staff"
+
+    const [users] = await db
+      .promise()
+      .query(\`SELECT * FROM \${table} WHERE email = ? AND reset_otp = ? AND otp_expiry > NOW()\`, [email, otp])
+
+    if (users.length === 0) {
+      return res.status(400).send("Invalid or expired OTP")
+    }
+
+    res.redirect(\`/reset-password?email=\${encodeURIComponent(email)}&type=\${userType}&verified=true\`)
+  } catch (err) {
+    console.error("OTP verification error:", err)
+    res.status(500).send("Error verifying OTP")
+  }
+})
+
+// Reset password
+app.post("/reset-password", async (req, res) => {
+  const { email, newPassword, userType } = req.body
+
+  try {
+    if (!email || !newPassword || !userType) {
+      return res.status(400).send("Email, new password, and user type are required")
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).send("Password must be at least 8 characters long")
+    }
+
+    const table = userType === "admin" ? "admin" : "staff"
+
+    const [users] = await db.promise().query(\`SELECT * FROM \${table} WHERE email = ?\`, [email])
+
+    if (users.length === 0) {
+      return res.status(400).send("User not found")
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 12)
+
+    await db
+      .promise()
+      .query(\`UPDATE \${table} SET password = ?, reset_otp = NULL, otp_expiry = NULL WHERE email = ?\`, [
+        hashedPassword,
+        email,
+      ])
+
+    res.redirect("/login?message=Password reset successfully")
+  } catch (err) {
+    console.error("Password reset error:", err)
+    res.status(500).send("Error resetting password")
+  }
+})
+
+// Staff Dashboard
+app.get("/staff-dashboard", (req, res) => {
+  if (!req.session.user || req.session.user.type !== "staff") {
+    return res.redirect("/login?error=Please login to access the dashboard")
+  }
+  res.sendFile(path.join(__dirname, "public/html/staff-dashboard.html"))
+})
+
+// Admin Dashboard
+app.get("/admin-dashboard", (req, res) => {
+  if (!req.session.user || req.session.user.type !== "admin") {
+    return res.redirect("/login?error=Please login to access the dashboard")
+  }
+  res.sendFile(path.join(__dirname, "public/html/admin-dashboard.html"))
+})
+
+// Admin Reports page
+app.get("/admin-reports", (req, res) => {
+  if (!req.session.user || req.session.user.type !== "admin") {
+    return res.redirect("/login?error=Admin access required")
+  }
+  res.sendFile(path.join(__dirname, "public/html/admin-reports.html"))
+})
+
+// Staff Profile
+app.get("/profile", (req, res) => {
+  if (!req.session.user) {
+    return res.redirect("/login?error=Please login to access your profile")
+  }
+  res.sendFile(path.join(__dirname, "public/html/staff-profile.html"))
+})
+
+// Staff Ranking page
+app.get("/staff-ranking", (req, res) => {
+  if (!req.session.user) {
+    return res.redirect("/login?error=Please login to access staff rankings")
+  }
+  res.sendFile(path.join(__dirname, "public/html/staff-ranking.html"))
+})
+
+// Manage Users page (Admin only)
+app.get("/manage-users", (req, res) => {
+  if (!req.session.user || req.session.user.type !== "admin") {
+    return res.redirect("/login?error=Admin access required")
+  }
+  res.sendFile(path.join(__dirname, "public/html/manage-users.html"))
+})
+
+// API endpoint to get staff profile
+app.get("/api/profile", async (req, res) => {
+  if (!req.session?.user) {
+    return res.status(401).json({ message: "Unauthorized - No session" })
+  }
+
+  try {
+    const table = req.session.user.type === "admin" ? "admin" : "staff"
+    const idField = req.session.user.type === "admin" ? "admin_id" : "staff_id"
+    const userId = req.session.user.id
+
+    const [userData] = await db.promise().query(\`SELECT * FROM \${table} WHERE \${idField} = ?\`, [userId])
+
+    if (userData.length === 0) {
+      return res.status(404).json({ message: "User not found" })
+    }
+
+    const user = userData[0]
+
+    const [sampleStats] = await db.promise().query(
+      \`
+      SELECT 
+        COUNT(*) as total_samples,
+        SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_samples,
+        SUM(CASE WHEN status = 'disposed' THEN 1 ELSE 0 END) as disposed_samples
+      FROM samples 
+      WHERE staff_id = ?
+    \`,
+      [userId]
+    )
+
+    const stats = sampleStats[0] || { total_samples: 0, active_samples: 0, disposed_samples: 0 }
+
+    const totalSamples = parseInt(stats.total_samples) || 0
+    const activeSamples = parseInt(stats.active_samples) || 0
+    const disposedSamples = parseInt(stats.disposed_samples) || 0
+
+    const profileData = {
+      staff_id: user[idField],
+      full_name: user.full_name,
+      username: user.username,
+      email: user.email,
+      department: user.department || "N/A",
+      phone_number: user.phone_number || "N/A",
+      profile_picture: user.profile_picture || null,
+      created_at: user.created_at,
+      samples_registered: totalSamples,
+      samples_disposed: disposedSamples,
+      active_samples: activeSamples,
+    }
+
+    res.json(profileData)
+  } catch (error) {
+    console.error("Profile error:", error)
+    res.status(500).json({ message: "Server error: " + error.message })
+  }
+})
+
+// API endpoint to get all samples
+app.get("/api/samples", async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ message: "Unauthorized" })
+  }
+
+  try {
+    let query = \`
+      SELECT 
+        s.*,
+        st.type_name as sample_type_name,
+        test.test_name,
+        storage.storage_name,
+        f.freezer_name,
+        staff.full_name as staff_name
+      FROM samples s
+      LEFT JOIN sample_types st ON s.sample_type_id = st.type_id
+      LEFT JOIN sample_tests test ON s.test_id = test.test_id
+      LEFT JOIN sample_storage storage ON s.storage_id = storage.storage_id
+      LEFT JOIN freezer f ON s.freezer_id = f.freezer_id
+      LEFT JOIN staff ON s.staff_id = staff.staff_id
+    \`
+
+    const params = []
+
+    if (req.session.user.type === "staff") {
+      query += " WHERE s.staff_id = ?"
+      params.push(req.session.user.id)
+    }
+
+    query += " ORDER BY s.registration_date DESC"
+
+    const [samples] = await db.promise().query(query, params)
+
+    res.json(samples)
+  } catch (error) {
+    console.error("Error fetching samples:", error)
+    res.status(500).json({ message: "Server error" })
+  }
+})
+
+// Helper functions
+async function sendOTPEmail(email, otp, name = "User") {
+  try {
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Password Reset OTP - Sample Storage System",
+      text: \`Your OTP for password reset is: \${otp} (valid for 15 minutes)\`,
+      html: \`
+                <h2>Password Reset Request</h2>
+                <p>Hello \${name},</p>
+                <p>You have requested to reset your password. Please use the following OTP to verify your identity:</p>
+                <h3 style="color: #4361ee; font-size: 24px; letter-spacing: 2px;">\${otp}</h3>
+                <p>This OTP will expire in 15 minutes.</p>
+                <p>If you didn't request this, please ignore this email.</p>
+                <br>
+                <p>Best regards,<br>Sample Storage System Team</p>
+            \`,
+    }
+
+    await transporter.sendMail(mailOptions)
+  } catch (error) {
+    console.error("Error sending email:", error)
+    throw error
+  }
+}
+
+async function sendOTPSMS(phoneNumber, otp) {
+  console.log(\`SMS OTP for \${phoneNumber}: \${otp}\`)
+}
+
+// Logout route
+app.post("/logout", (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error("Logout error:", err)
+      return res.status(500).send("Error during logout")
+    }
+    res.redirect("/login?message=You have been logged out")
+  })
+})
+
+app.get("/logout", (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error("Logout error:", err)
+      return res.status(500).send("Error during logout")
+    }
+    res.redirect("/login?message=You have been logged out")
+  })
+})
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error("Unhandled error:", err)
+  res.status(500).send("Internal server error")
+})
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).send("Page not found")
+})
+
+// Start server
+const PORT = process.env.PORT || 3000
+
+const server = app.listen(PORT, (err) => {
+  if (err) {
+    console.error("Failed to start server:", err)
+    process.exit(1)
+  }
+  console.log(\`✅ Server running on port \${PORT}\`)
+  console.log(\`🌐 Access your application at: http://localhost:\${PORT}\`)
+})
+
+server.on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(\`❌ Port \${PORT} is already in use. Please try a different port or stop the other process.\`)
+  } else {
+    console.error("❌ Server error:", err)
+  }
+  process.exit(1)
+})
+
+process.on("SIGTERM", () => {
+  console.log("🛑 SIGTERM received, shutting down gracefully")
+  server.close(() => {
+    console.log("✅ Process terminated")
+    db.end()
+  })
+})
+
+process.on("SIGINT", () => {
+  console.log("🛑 SIGINT received, shutting down gracefully")
+  server.close(() => {
+    console.log("✅ Process terminated")
+    db.end()
+  })
+})`
+
+// Write the fixed app.js file
+fs.writeFileSync("app.js", appContent)
+
+console.log("✅ Working app.js file created successfully!")
+console.log("🚀 Now run: npm start")
+console.log("🔐 Your login should work properly now!")

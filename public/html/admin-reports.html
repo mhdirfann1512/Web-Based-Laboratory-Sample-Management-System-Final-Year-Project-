@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Reports - Sample Storage System</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet" href="/css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Header Styles */
+        .header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            padding: 15px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #4285f4;
+            text-decoration: none;
+        }
+
+        .header-nav {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .header-nav a {
+            color: #333;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 12px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        .header-nav a:hover {
+            background-color: #e9ecef;
+        }
+
+        .reports-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .page-header {
+            
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .page-header h1 {
+            margin: 0;
+            font-size: 3rem;
+        }
+
+        .page-header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+        }
+
+        .reports-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .report-card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-left: 4px solid #667eea;
+        }
+
+        .report-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .report-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .report-card p {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .report-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background-color: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #5a6fd8;
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #218838;
+        }
+
+        .btn-info {
+            background-color: #17a2b8;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background-color: #138496;
+        }
+
+        .stats-overview {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .stats-grid {
+             display: flex;
+            flex-wrap: nowrap;
+            gap: 20px;
+            overflow-x: auto; /* Allow scrolling on smaller screens */
+        }
+
+       .stat-item {
+            flex: 0 0 250px; /* Fixed width for each card */
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+            display: block;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .back-button {
+            background-color: #6c757d;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            transition: background-color 0.3s ease;
+        }
+
+        .back-button:hover {
+            background-color: #5a6268;
+            color: white;
+            text-decoration: none;
+        }
+
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+        }
+
+        .alert-info {
+            color: #0c5460;
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .header-container {
+                padding: 0 15px;
+            }
+            
+            .header-nav {
+                gap: 10px;
+            }
+            
+            .header-nav a {
+                padding: 6px 8px;
+                font-size: 14px;
+            }
+            
+            .reports-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .report-actions {
+                flex-direction: column;
+            }
+            
+            .btn {
+                justify-content: center;
+            }
+        }
+    
+        .alert-error {
+            color: #721c24;
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+
+        .alert-success {
+            color: #155724;
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-container">
+            <a href="/admin-dashboard" class="logo">SampleStorage</a>
+            <nav class="header-nav">
+                <span><i class="fas fa-user-shield"></i> System Administrator</span>
+                <a href="/admin-dashboard" class="nav-link">
+                    <i class="fas fa-tachometer-alt"></i>Dashboard
+                </a>
+                <a href="/logout" class="nav-link logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="reports-container">
+    
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1><i class="fas fa-chart-line"></i> Admin Reports</h1>
+            
+        </div>
+
+        <!-- Alert Messages -->
+        <div id="message" class="alert" style="display: none;"></div>
+
+        <!-- Statistics Overview -->
+        <div class="stats-overview">
+            <h3><i class="fas fa-tachometer-alt"></i> System Overview</h3>
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-item">
+                    <span class="stat-number" id="totalSamples">Loading...</span>
+                    <div class="stat-label">Total Samples</div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="activeSamples">Loading...</span>
+                    <div class="stat-label">Active Samples</div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="disposedSamples">Loading...</span>
+                    <div class="stat-label">Disposed Samples</div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="totalStaff">Loading...</span>
+                    <div class="stat-label">Total Staff</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reports Grid -->
+        <div class="reports-grid">
+            <!-- Sample Reports -->
+            <div class="report-card">
+                <h3><i class="fas fa-vial"></i> Sample Reports</h3>
+                <p>Generate detailed reports about sample registration, disposal, and tracking activities.</p>
+                <div class="report-actions">
+                    <button class="btn btn-info" onclick="exportReport('summary-pdf')">
+                        <i class="fas fa-file-pdf"></i> Export PDF
+                    </button>
+                </div>
+            </div>
+
+            <!-- Staff Performance -->
+            <div class="report-card">
+                <h3><i class="fas fa-users"></i> Staff Performance</h3>
+                <p>Analyze staff productivity, sample handling efficiency, and performance metrics.</p>
+                <div class="report-actions">
+                    <button class="btn btn-info" onclick="exportReport('staff-performance-pdf')">
+                        <i class="fas fa-file-pdf"></i> Export Staff Performance PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <!-- Recent Reports -->
+        <div class="stats-overview">
+            <h3><i class="fas fa-history"></i> Recent Reports</h3>
+            <div id="recentReports" class="loading">
+                Loading recent reports...
+            </div>
+        </div>
+    </div>
+
+    
+    <script>
+        // Check authentication and load data
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                await loadSystemStats();
+                await loadRecentReports();
+            } catch (error) {
+                console.error('Error loading reports page:', error);
+                showMessage('Error loading reports data', 'error');
+            }
+        });
+
+        // Load system statistics
+        async function loadSystemStats() {
+            try {
+                const response = await fetch('/api/admin/reports-stats');
+                if (!response.ok) {
+                    throw new Error('Failed to load stats');
+                }
+                
+                const stats = await response.json();
+                
+                document.getElementById('totalSamples').textContent = stats.totalSamples || '0';
+                document.getElementById('activeSamples').textContent = stats.activeSamples || '0';
+                document.getElementById('disposedSamples').textContent = stats.disposedSamples || '0';
+                document.getElementById('totalStaff').textContent = stats.totalStaff || '0';
+                
+            } catch (error) {
+                console.error('Error loading stats:', error);
+                document.getElementById('totalSamples').textContent = 'Error';
+                document.getElementById('activeSamples').textContent = 'Error';
+                document.getElementById('disposedSamples').textContent = 'Error';
+                document.getElementById('totalStaff').textContent = 'Error';
+            }
+        }
+
+        // Load recent reports
+        async function loadRecentReports() {
+            try {
+                const recentReportsDiv = document.getElementById('recentReports');
+                
+                // For now, show placeholder data
+                recentReportsDiv.innerHTML = `
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        No recent reports found. Generate your first report using the options above.
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Error loading recent reports:', error);
+                document.getElementById('recentReports').innerHTML = `
+                    <div class="alert alert-error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Error loading recent reports.
+                    </div>
+                `;
+            }
+        }
+
+        // Generate report function
+        async function generateReport(reportType) {
+            showMessage(`Generating ${reportType.replace('-', ' ')} report...`, 'info');
+            
+            try {
+                const response = await fetch(`/api/admin/generate-report/${reportType}`);
+                if (!response.ok) {
+                    throw new Error('Failed to generate report');
+                }
+                
+                const result = await response.json();
+                showMessage(`${reportType.replace('-', ' ')} report generated successfully!`, 'success');
+                
+            } catch (error) {
+                console.error('Error generating report:', error);
+                showMessage('Error generating report', 'error');
+            }
+        }
+
+        // REAL Export report function that downloads actual files
+        async function exportReport(type) {
+  const button = event.target;
+  const originalText = button.innerHTML;
+
+  button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
+  button.disabled = true;
+
+  try {
+    showMessage(`Preparing export...`, 'info');
+
+    const response = await fetch(`/api/admin/generate-report/${type}`);
+
+    if (!response.ok) {
+      throw new Error(`Export failed: ${response.statusText}`);
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `summary_report.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+
+    showMessage(`PDF exported successfully!`, 'success');
+  } catch (error) {
+    console.error('Export error:', error);
+    showMessage(`Error exporting PDF: ${error.message}`, 'error');
+  } finally {
+    button.innerHTML = originalText;
+    button.disabled = false;
+  }
+}
+
+async function exportStaffPerformancePDF() {
+    const button = event.target;
+    const originalText = button.innerHTML;
+
+    // Show loading state
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
+    button.disabled = true;
+
+    try {
+        showMessage(`Preparing staff performance PDF...`, 'info');
+
+        const response = await fetch('/api/admin/generate-report/staff-performance-pdf');
+
+        if (!response.ok) {
+            throw new Error(`Export failed: ${response.statusText}`);
+        }
+
+        // Get filename from response header
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = "staff_performance_report.pdf";
+        if (contentDisposition) {
+            const match = contentDisposition.match(/filename="(.+)"/);
+            if (match) filename = match[1];
+        }
+
+        // Create blob and download
+        const blob = await response.blob();
+        const urlBlob = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = urlBlob;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(urlBlob);
+
+        showMessage(`Staff performance report exported as PDF successfully!`, 'success');
+    } catch (error) {
+        console.error('Export error:', error);
+        showMessage(`Error exporting staff performance report: ${error.message}`, 'error');
+    } finally {
+        button.innerHTML = originalText;
+        button.disabled = false;
+    }
+}
+
+
+
+        // Custom report builder
+        function openCustomReportBuilder() {
+            showMessage('Opening custom report builder...', 'info');
+            // This would open a modal or redirect to a report builder page
+        }
+
+        // View saved reports
+        function viewSavedReports() {
+            showMessage('Loading saved reports...', 'info');
+            // This would show a list of previously saved reports
+        }
+
+        // Schedule report
+        function scheduleReport() {
+            showMessage('Opening report scheduler...', 'info');
+            // This would open a scheduling interface
+        }
+
+        // Open analytics dashboard
+        function openAnalyticsDashboard() {
+            showMessage('Opening analytics dashboard...', 'info');
+            // This would redirect to or open an analytics dashboard
+        }
+
+        // Show message function
+        function showMessage(message, type = 'info') {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = message;
+            messageDiv.className = `alert alert-${type}`;
+            messageDiv.style.display = 'block';
+
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function downloadSummaryPDF() {
+    // Show loading message
+    showMessage('Preparing PDF summary report...', 'info');
+
+    // Directly open the route
+    window.location.href = '/api/admin/generate-report/summary-pdf';
+
+    // Optionally clear the message after a few seconds
+    setTimeout(() => {
+        document.getElementById('message').style.display = 'none';
+    }, 5000);
+}
+
+    </script>
+
+
+        <!-- Download Progress Indicator -->
+        <div id="downloadProgress" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); z-index: 9999;">
+            <div style="text-align: center;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #667eea; margin-bottom: 10px;"></i>
+                <p>Preparing your download...</p>
+            </div>
+        </div>
+
+</body>
+</html>

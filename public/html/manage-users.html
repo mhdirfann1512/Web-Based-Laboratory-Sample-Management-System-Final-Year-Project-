@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Users - Sample Storage System</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .users-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .page-header {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .page-header h1 {
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .page-header p {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+        }
+
+        .users-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            background: white;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            min-width: 300px;
+        }
+
+        .search-box input {
+            border: none;
+            outline: none;
+            flex: 1;
+            padding: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .search-box i {
+            color: #7f8c8d;
+            margin-right: 0.5rem;
+        }
+
+        .add-user-btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: background 0.3s;
+        }
+
+        .add-user-btn:hover {
+            background: #219a52;
+        }
+
+        .users-table {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .table-header {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-bottom: 1px solid #e1e8ed;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .users-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .user-item {
+            display: grid;
+            grid-template-columns: 60px 1fr 150px 150px 120px 120px;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid #f1f3f4;
+            transition: background 0.2s;
+        }
+
+        .user-item:hover {
+            background: #f8f9fa;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e1e8ed;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #7f8c8d;
+            font-weight: 600;
+        }
+
+        .user-info h4 {
+            margin: 0 0 0.25rem 0;
+            color: #2c3e50;
+            font-size: 1rem;
+        }
+
+        .user-info p {
+            margin: 0;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .user-department {
+            color: #5a6c7d;
+            font-weight: 500;
+        }
+
+        .user-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .user-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .action-btn {
+            padding: 0.5rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .edit-btn {
+            background: #3498db;
+            color: white;
+        }
+
+        .edit-btn:hover {
+            background: #2980b9;
+        }
+
+        .delete-btn {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .delete-btn:hover {
+            background: #c0392b;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #7f8c8d;
+        }
+
+        .no-users {
+            text-align: center;
+            padding: 3rem;
+            color: #7f8c8d;
+        }
+
+        .back-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: background 0.3s;
+            text-decoration: none;
+        }
+
+        .back-btn:hover {
+            background: #5a6268;
+        }
+
+        @media (max-width: 768px) {
+            .users-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-box {
+                min-width: auto;
+            }
+
+            .user-item {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+                text-align: center;
+            }
+
+            .user-actions {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="container">
+            <a href="/" class="logo">SampleStorage</a>
+            <div class="nav-links">
+                <span class="user-info">
+                    <i class="fas fa-user-shield"></i>
+                    <span id="adminName">Loading...</span>
+                </span>
+                <a href="/admin-dashboard" class="nav-link">
+                    <i class="fas fa-tachometer-alt"></i>Dashboard
+                </a>
+                <a href="/logout" class="nav-link logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="users-container">
+        <div class="page-header">
+            <h1>Manage Users</h1>
+        </div>
+
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Search users by name, email, or department...">
+            </div>
+
+
+        <div class="users-table">
+            <div class="table-header">
+                <div style="display: grid; grid-template-columns: 60px 1fr 150px 150px 120px 120px; align-items: center;">
+                    <span></span>
+                    <span>User Information</span>
+                    <span>Department</span>
+                    <span>Join Date</span>
+                    <span>Status</span>
+                    <span>Actions</span>
+                </div>
+            </div>
+
+            <div class="users-list" id="usersList">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    Loading users...
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let allUsers = [];
+
+        // Load users when page loads
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                await loadAdminProfile();
+                await loadUsers();
+                setupSearch();
+            } catch (error) {
+                console.error('Error loading page:', error);
+                window.location.href = '/login';
+            }
+        });
+
+        async function loadAdminProfile() {
+            try {
+                const response = await fetch('/api/profile');
+                if (!response.ok) {
+                    throw new Error('Failed to load profile');
+                }
+
+                
+                
+                const profile = await response.json();
+                document.getElementById('adminName').textContent = profile.full_name || 'Administrator';
+            } catch (error) {
+                console.error('Error loading profile:', error);
+            }
+        }
+
+        async function loadUsers() {
+
+            try {
+                console.log('Loading users...');
+                const response = await fetch('/api/admin/users');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                allUsers = await response.json();
+                console.log('Loaded users:', allUsers);
+                displayUsers(allUsers);
+            } catch (error) {
+                console.error('Error loading users:', error);
+                document.getElementById('usersList').innerHTML = `
+                    <div class="no-users">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 1rem; color: #e74c3c;"></i>
+                        <h3>Error Loading Users</h3>
+                        <p>Unable to load user data. Please try again later.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function displayUsers(users) {
+            const usersList = document.getElementById('usersList');
+            
+            if (users.length === 0) {
+                usersList.innerHTML = `
+                    <div class="no-users">
+                        <i class="fas fa-users" style="font-size: 2rem; margin-bottom: 1rem; color: #7f8c8d;"></i>
+                        <h3>No Users Found</h3>
+                        <p>No users match your search criteria.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            usersList.innerHTML = users.map(user => {
+                const initials = user.full_name ? user.full_name.split(' ').map(n => n[0]).join('').toUpperCase() : 'U';
+                const joinDate = new Date(user.created_at).toLocaleDateString();
+                const isActive = true; // You can add status logic here
+                
+                return `
+                    <div class="user-item">
+                        <img >
+                        <div class="user-info">
+                            <h4>${user.full_name || 'Unknown'}</h4>
+                            <p>${user.email}</p>
+                        </div>
+                        <div class="user-department">${user.department || 'N/A'}</div>
+                        <div>${joinDate}</div>
+                        <div class="user-status ${isActive ? 'status-active' : 'status-inactive'}">
+                            ${isActive ? 'Active' : 'Inactive'}
+                        </div>
+                        <div class="user-actions">
+                            <button class="action-btn edit-btn" onclick="editUser(${user.staff_id})" title="Edit User">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="action-btn delete-btn" onclick="deleteUser(${user.staff_id}, '${user.full_name}')" title="Delete User">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function setupSearch() {
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const filteredUsers = allUsers.filter(user => 
+                    user.full_name?.toLowerCase().includes(searchTerm) ||
+                    user.email?.toLowerCase().includes(searchTerm) ||
+                    user.department?.toLowerCase().includes(searchTerm) ||
+                    user.username?.toLowerCase().includes(searchTerm)
+                );
+                displayUsers(filteredUsers);
+            });
+        }
+
+        function addNewUser() {
+            alert('Add New User functionality will be implemented soon!');
+            // TODO: Implement add user modal/form
+        }
+
+        function editUser(userId) {
+            alert(`Edit user functionality for user ID: ${userId} will be implemented soon!`);
+            // TODO: Implement edit user modal/form
+        }
+
+        function deleteUser(userId, userName) {
+            if (confirm(`Are you sure you want to delete user "${userName}"? This action cannot be undone.`)) {
+                alert(`Delete user functionality for user ID: ${userId} will be implemented soon!`);
+                // TODO: Implement delete user API call
+            }
+        }
+    </script>
+</body>
+</html>

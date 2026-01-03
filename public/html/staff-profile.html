@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Profile - Sample Storage System</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/profile.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="container">
+                <a href="/" class="logo">SampleStorage</a>
+                <div class="nav-links">
+                    <span class="user-info">
+                        <i class="fas fa-user-circle"></i>
+                        <span id="staffName">Loading...</span>
+                    </span>
+                    <a href="/staff-dashboard" class="nav-link">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                    <a href="/logout" class="nav-link logout-btn">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="main-container">
+        <div class="profile-layout">
+            <!-- Profile Header -->
+            <div class="profile-header card">
+                <div class="profile-avatar-section">
+                    <div class="avatar-container">
+                        <img id="profilePicture" src="/images/default-avatar.png" alt="Profile Picture" class="profile-avatar">
+                        <button class="avatar-edit-btn" onclick="document.getElementById('imageUpload').click()">
+                            <i class="fas fa-camera"></i>
+                        </button>
+                        <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+                    </div>
+                </div>
+                <div class="profile-info-section">
+                    <h1 id="displayName">Loading...</h1>
+                    <p class="profile-title" id="staffPosition">Staff Member</p>
+                    <p class="profile-department" id="staffDepartment">Department: Loading...</p>
+                    <p class="profile-id" id="staffId">ID: Loading...</p>
+                    <div class="profile-actions">
+                        <button class="btn btn-primary" onclick="editProfile()">
+                            <i class="fas fa-edit"></i> Edit Profile
+                        </button>
+                        <button class="btn btn-secondary" onclick="changePassword()">
+                            <i class="fas fa-key"></i> Change Password
+                        </button>
+                        <a href="/staff-ranking" class="btn btn-secondary">
+                            <i class="fas fa-trophy"></i> View Rankings
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div id="message" class="alert" style="display: none;"></div>
+
+            <!-- Statistics Grid -->
+            <div class="stats-grid">
+                <div class="stat-card card">
+                    <div class="stat-icon">
+                        <i class="fas fa-vial"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>Samples Registered</h3>
+                        <div class="stat-value" id="samplesRegistered">0</div>
+                        <small class="stat-description">Total samples added to system</small>
+                    </div>
+                </div>
+
+                <div class="stat-card card">
+                    <div class="stat-icon">
+                        <i class="fas fa-trash-alt"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>Samples Disposed</h3>
+                        <div class="stat-value" id="samplesDisposed">0</div>
+                        <small class="stat-description">Properly disposed samples</small>
+                    </div>
+                </div>
+
+                <div class="stat-card card">
+                    <div class="stat-icon">
+                        <i class="fas fa-percentage"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>Completion Rate</h3>
+                        <div class="stat-value" id="completionRate">0%</div>
+                        <small class="stat-description">Samples fully processed</small>
+                    </div>
+                </div>
+
+                <div class="stat-card card">
+                    <div class="stat-icon">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>Performance Score</h3>
+                        <div class="stat-value" id="performanceScore">0</div>
+                        <small class="stat-description">Based on efficiency</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Section -->
+            <div class="progress-section card">
+                <h3>Performance Overview</h3>
+                <div class="progress-item">
+                    <div class="progress-header">
+                        <span>Sample Processing Completion</span>
+                        <span id="progressPercentage">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="completionProgress" style="width: 0%"></div>
+                    </div>
+                    <small class="progress-description">Percentage of registered samples that have been properly disposed</small>
+                </div>
+
+                <div class="progress-item">
+                    <div class="progress-header">
+                        <span>Monthly Target</span>
+                        <span id="monthlyTargetPercentage">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill secondary" id="monthlyProgress" style="width: 0%"></div>
+                    </div>
+                    <small class="progress-description">Progress towards monthly sample processing goal</small>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="recent-activity card">
+                <h3>Recent Activity</h3>
+                <div class="activity-list" id="recentActivity">
+                    <div class="activity-item">
+                        <div class="activity-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="activity-content">
+                            <p>Loading recent activity...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Details -->
+            <div class="profile-details card">
+                <h3>Profile Information</h3>
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <label>Full Name:</label>
+                        <span id="fullName">Loading...</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Username:</label>
+                        <span id="username">Loading...</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Email:</label>
+                        <span id="email">Loading...</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Phone:</label>
+                        <span id="phoneNumber">Loading...</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Department:</label>
+                        <span id="department">Loading...</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Join Date:</label>
+                        <span id="joinDate">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadProfileData();
+            await loadRecentActivity();
+        });
+
+        async function loadProfileData() {
+            try {
+                const response = await fetch('/api/profile');
+                if (!response.ok) {
+                    throw new Error('Failed to load profile');
+                }
+
+                const profile = await response.json();
+                
+                // Update profile header
+                document.getElementById('staffName').textContent = profile.full_name || 'Staff Member';
+                document.getElementById('displayName').textContent = profile.full_name || 'Staff Member';
+                document.getElementById('staffPosition').textContent = 'Staff Member';
+                document.getElementById('staffDepartment').textContent = `Department: ${profile.department || 'N/A'}`;
+                document.getElementById('staffId').textContent = `ID: ${profile.staff_id || 'N/A'}`;
+
+                // Update profile picture
+                const profilePicture = document.getElementById('profilePicture');
+                if (profile.profile_picture) {
+                    profilePicture.src = profile.profile_picture;
+                } else {
+                    profilePicture.src = '/images/default-avatar.png';
+                }
+
+                // Update profile details
+                document.getElementById('fullName').textContent = profile.full_name || 'N/A';
+                document.getElementById('username').textContent = profile.username || 'N/A';
+                document.getElementById('email').textContent = profile.email || 'N/A';
+                document.getElementById('phoneNumber').textContent = profile.phone_number || 'N/A';
+                document.getElementById('department').textContent = profile.department || 'N/A';
+                document.getElementById('joinDate').textContent = formatDate(profile.created_at) || 'N/A';
+
+                // Update statistics
+                const registered = profile.samples_registered || 0;
+                const disposed = profile.samples_disposed || 0;
+                const active = profile.active_samples || 0;
+                const completionRate = registered > 0 ? Math.round((disposed / registered) * 100) : 0;
+                const performanceScore = calculatePerformanceScore(registered, disposed, completionRate);
+
+                document.getElementById('samplesRegistered').textContent = registered;
+                document.getElementById('samplesDisposed').textContent = disposed;
+                document.getElementById('completionRate').textContent = `${completionRate}%`;
+                document.getElementById('performanceScore').textContent = performanceScore;
+
+                // Update progress bars
+                document.getElementById('progressPercentage').textContent = `${completionRate}%`;
+                document.getElementById('completionProgress').style.width = `${completionRate}%`;
+
+                // Monthly target calculation based on current month progress
+                const currentDate = new Date();
+                const currentMonth = currentDate.getMonth() + 1;
+                const monthlyTarget = Math.max(10, Math.ceil(registered / currentMonth * 12)); // Estimate annual target
+                const monthlyProgress = Math.min((registered / monthlyTarget) * 100, 100);
+                document.getElementById('monthlyTargetPercentage').textContent = `${Math.round(monthlyProgress)}%`;
+                document.getElementById('monthlyProgress').style.width = `${monthlyProgress}%`;
+
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                showMessage('Error loading profile information', true);
+            }
+        }
+
+        async function loadRecentActivity() {
+            try {
+                const response = await fetch('/api/recent-activity');
+                if (!response.ok) {
+                    return; // Fail silently
+                }
+
+                const activities = await response.json();
+                const activityList = document.getElementById('recentActivity');
+
+                if (activities.length > 0) {
+                  activityList.innerHTML = activities.map(activity => `
+                    <div class="activity-item">
+                      <div class="activity-icon">
+                        <i class="fas fa-${activity.type === 'register' ? 'vial' : 'trash'}"></i>
+                      </div>
+                      <div class="activity-content">
+                        <p><strong>${activity.sample_id}</strong> ${activity.description}</p>
+                        <small>${formatDate(activity.created_at)}</small>
+                      </div>
+                    </div>
+                  `).join('');
+                } else {
+                  activityList.innerHTML = `
+                    <div class="activity-item">
+                      <div class="activity-icon">
+                        <i class="fas fa-info-circle"></i>
+                      </div>
+                      <div class="activity-content">
+                        <p>No recent activity found</p>
+                        <small>Start by registering some samples!</small>
+                      </div>
+                    </div>
+                  `;
+                }
+            } catch (error) {
+                console.error('Error loading recent activity:', error);
+            }
+        }
+
+        // Handle image upload - UPDATED WITH REAL FUNCTIONALITY
+        document.getElementById('imageUpload').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                showMessage('Please select a valid image file', true);
+                return;
+            }
+
+            // Validate file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                showMessage('Image size must be less than 5MB', true);
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('profileImage', file);
+
+            try {
+                // Show loading state
+                const profilePicture = document.getElementById('profilePicture');
+                const originalSrc = profilePicture.src;
+                
+                showMessage('Uploading image...', false);
+
+                const response = await fetch('/api/profile/image', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    profilePicture.src = data.imageUrl + '?t=' + Date.now(); // Add timestamp to force reload
+                    showMessage('Profile picture updated successfully!', false);
+                } else {
+                    throw new Error(data.message || 'Failed to upload image');
+                }
+            } catch (error) {
+                console.error('Error uploading image:', error);
+                showMessage('Error uploading image: ' + error.message, true);
+            }
+        });
+
+        function calculatePerformanceScore(registered, disposed, completionRate) {
+            // Simple performance calculation
+            const baseScore = registered * 10; // 10 points per registered sample
+            const completionBonus = disposed * 15; // 15 points per disposed sample
+            const efficiencyBonus = completionRate > 80 ? 100 : 0; // Bonus for high completion rate
+            return baseScore + completionBonus + efficiencyBonus;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        function editProfile() {
+            // TODO: Implement edit profile modal or redirect to edit page
+            showMessage('Edit profile functionality coming soon!', false);
+        }
+
+        function changePassword() {
+            // TODO: Implement change password functionality
+            showMessage('Change password functionality coming soon!', false);
+        }
+
+        function showMessage(message, isError = true) {
+            const messageDiv = document.getElementById('message');
+            if (!messageDiv) return;
+
+            messageDiv.textContent = message;
+            messageDiv.style.display = 'block';
+            messageDiv.className = isError ? 'alert alert-error' : 'alert alert-success';
+
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+    <script src="/js/script.js"></script>
+</body>
+</html>

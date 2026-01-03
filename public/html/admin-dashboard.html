@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Sample Storage System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .navbar {
+            background-color: #fff;
+            padding: 0 2rem;
+            height: 70px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .nav-link {
+            color: rgb(0, 0, 0);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .nav-link:hover {
+            background-color: rgba(255,255,255,0.2);
+        }
+
+        .main-container {
+            display: flex;
+            height: calc(100vh - 60px);
+            padding: 1rem;
+            gap: 1rem;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: white;
+            border-radius: 10px;
+            padding: 1rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .main-content {
+            background: url('/images/background.jpg') no-repeat center center fixed;
+            background-size: cover;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .user-profile {
+            text-align: center;
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            background: #667eea;
+            border-radius: 50%;
+            margin: 0 auto 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+        }
+
+        .profile-info h3 {
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .profile-info p {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .system-stats h4 {
+            color: #333;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .page-header {
+          
+            border-radius: 10px;
+            padding: 1.5rem;
+            
+        }
+
+        .page-header h1 {
+           color: #ffffff;
+           text-shadow: 0 0 5px #007bff, 0 0 10px #007bff, 0 0 20px #007bff;
+            font-size: 3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .action-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .activity-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .activity-item {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-text {
+            color: #333;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .activity-time {
+            color: #999;
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+            }
+        }
+    
+        .left-section {
+            flex: 2;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            height: 100%;
+        }
+
+        .action-card {
+            background: white;
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .action-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .card-title {
+            color: #333;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: all 0.3s;
+            text-align: center;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.4);
+        }
+
+        .content-grid {
+            display: flex;
+            gap: 1rem;
+            flex: 1;
+            height: calc(100vh - 200px);
+            overflow: hidden;
+        }
+
+        .right-section {
+            flex: 1;
+            height: fit-content;
+        }
+
+        .activity-list {
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        @media (max-width: 1200px) {
+            .left-section {
+            flex: 2;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            height: 100%;
+        }
+        }
+
+        @media (max-width: 768px) {
+            .main-ontainer {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+            }
+            
+            .content-grid {
+                flex-direction: column;
+                height: auto;
+            }
+            
+            .left-section {
+            flex: 2;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            height: 100%;
+        }
+        }
+    
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="container">
+            <a href="/" class="logo">SampleStorage</a>
+            <div class="nav-links">
+                <span class="user-info">
+                    <i class="fas fa-user-shield"></i>
+                    <span>System Administrator</span>
+                </span>
+                <a href="/logout" class="nav-link">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="main-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="user-profile">
+                <div class="profile-avatar">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+                <div class="profile-info">
+                    <h3>System Administrator</h3>
+                    <p>Administrator</p>
+                    <p>ID: ADMIN001</p>
+                    <p>Department: IT</p>
+                </div>
+            </div>
+
+            <div class="system-stats">
+                <h4><i class="fas fa-chart-bar"></i> System Overview</h4>
+                <div class="stat-item">
+                    <span>Total Users:</span>
+                    <span class="stat-value" id="totalStaff">25</span>
+                </div>
+                <div class="stat-item">
+                    <span>Active Samples:</span>
+                    <span class="stat-value" id="activeSamples">156</span>
+                </div>
+                
+                <div class="stat-item">
+                    <span>System Status:</span>
+                    <span class="stat-value" id="systemHealth" style="color: #28a745;">Online</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="page-header">
+                <h1><i class="fas fa-tachometer-alt"></i> Admin Dashboard</h1>
+            </div>
+
+            <div class="content-grid">
+                <div class="left-section">
+                    <!-- View All Samples -->
+                    <div class="action-card" onclick="window.location.href='/view-samples'">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-eye"></i>
+                            </div>
+                            <div class="card-title">View All Samples</div>
+                        </div>
+                        <a href="/view-samples" class="btn">
+                            <i class="fas fa-list"></i> View All Samples
+                        </a>
+                    </div>
+
+                    <!-- User Management -->
+                    <div class="action-card" onclick="window.location.href='/manage-users'">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="card-title">Manage Users</div>
+                        </div>
+                        <a href="/manage-users" class="btn">
+                            <i class="fas fa-user-cog"></i> Manage Users
+                        </a>
+                    </div>
+
+                    <!-- Sample Management -->
+                    <div class="action-card" onclick="window.location.href='/admin-samples'">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-vials"></i>
+                            </div>
+                            <div class="card-title">Sample Management</div>
+                        </div>
+                        <a href="/admin-samples" class="btn">
+                            <i class="fas fa-flask"></i> View Samples
+                        </a>
+                    </div>
+
+                    <!-- Reports & Analytics -->
+                    <div class="action-card" onclick="window.location.href='/admin-reports'">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="card-title">Reports & Analytics</div>
+                        </div>
+                        <a href="/admin-reports" class="btn">
+                            <i class="fas fa-file-alt"></i> View Reports
+                        </a>
+                    </div>
+                </div>
+
+                <div class="right-section">
+                    <!-- System Activity -->
+                    <div class="card">
+                        <div class="activity-header">
+                            <i class="fas fa-activity"></i>
+                            <h3>System Activity</h3>
+                        </div>
+                        <div class="activity-list">
+                            <div class="activity-item">
+                                <div class="activity-text">New sample registered by Dr. Smith</div>
+                                <div class="activity-time">2 minutes ago</div>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-text">User login: john.doe@hospital.com</div>
+                                <div class="activity-time">5 minutes ago</div>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-text">Sample disposal completed</div>
+                                <div class="activity-time">10 minutes ago</div>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-text">System backup completed</div>
+                                <div class="activity-time">1 hour ago</div>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-text">New user registered: jane.smith@lab.com</div>
+                                <div class="activity-time">2 hours ago</div>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-text">Storage capacity check completed</div>
+                                <div class="activity-time">3 hours ago</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadSystemStats();
+    setInterval(async () => {
+        await loadSystemStats();
+    }, 30000);
+});
+
+async function loadSystemStats() {
+    try {
+        console.log('Fetching system stats...');
+        const response = await fetch('/api/admin/system-overview');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const stats = await response.json();
+        console.log('Received stats:', stats);
+        
+        // Update system stats with real data
+        const totalStaffElement = document.getElementById('totalStaff');
+        const activeSamplesElement = document.getElementById('activeSamples');
+        const systemHealthElement = document.getElementById('systemHealth');
+        
+        if (totalStaffElement) totalStaffElement.textContent = stats.totalStaff || '0';
+        if (activeSamplesElement) activeSamplesElement.textContent = stats.activeSamples || '0';
+        if (systemHealthElement) systemHealthElement.textContent = stats.systemHealth || 'Online';
+        
+    } catch (error) {
+        console.error('Error loading system stats:', error);
+        
+        const totalStaffElement = document.getElementById('totalStaff');
+        const activeSamplesElement = document.getElementById('activeSamples');
+        const systemHealthElement = document.getElementById('systemHealth');
+        
+        if (totalStaffElement) totalStaffElement.textContent = 'Error';
+        if (activeSamplesElement) activeSamplesElement.textContent = 'Error';
+        if (systemHealthElement) systemHealthElement.textContent = 'Error';
+    }
+}
+
+        async function loadSystemActivity() {
+            try {
+                console.log('Fetching system activity...');
+                const response = await fetch('/api/admin/system-activity');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const activities = await response.json();
+                console.log('Received activities:', activities);
+                
+                const activityList = document.getElementById('systemActivity');
+                
+                if (activities.length === 0) {
+                    activityList.innerHTML = `
+                        <div class="activity-item">
+                            <div class="activity-icon">
+                                <i class="fas fa-info-circle"></i>
+                            </div>
+                            <div class="activity-content">
+                                <p>No recent system activity</p>
+                                <small>System is ready for use</small>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Clear existing content
+                activityList.innerHTML = '';
+                
+                // Add each activity
+                activities.forEach(activity => {
+                    const activityItem = document.createElement('div');
+                    activityItem.className = 'activity-item';
+                    
+                    const timeAgo = getTimeAgo(new Date(activity.timestamp));
+                    
+                    activityItem.innerHTML = `
+                        <div class="activity-icon">
+                            <i class="${activity.icon}"></i>
+                        </div>
+                        <div class="activity-content">
+                            <p>${activity.description}</p>
+                            <small>${timeAgo}</small>
+                        </div>
+                    `;
+                    
+                    activityList.appendChild(activityItem);
+                });
+                
+            } catch (error) {
+                console.error('Error loading system activity:', error);
+                
+                // Show error message
+                const activityList = document.getElementById('systemActivity');
+                activityList.innerHTML = `
+                    <div class="activity-item">
+                        <div class="activity-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="activity-content">
+                            <p>Error loading system activity</p>
+                            <small>Please check system status</small>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function getTimeAgo(date) {
+            const now = new Date();
+            const diffInSeconds = Math.floor((now - date) / 1000);
+            
+            if (diffInSeconds < 60) {
+                return 'Just now';
+            } else if (diffInSeconds < 3600) {
+                const minutes = Math.floor(diffInSeconds / 60);
+                return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+            } else if (diffInSeconds < 86400) {
+                const hours = Math.floor(diffInSeconds / 3600);
+                return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+            } else {
+                const days = Math.floor(diffInSeconds / 86400);
+                return `${days} day${days > 1 ? 's' : ''} ago`;
+            }
+        }
+
+</script>
+</body>
+</html>

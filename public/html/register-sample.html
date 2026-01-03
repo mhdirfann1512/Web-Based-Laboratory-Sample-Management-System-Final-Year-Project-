@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register New Sample - Sample Storage System</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f8f9fa;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .navbar {
+            background-color: #fff;
+            padding: 1rem 0;
+            border-bottom: 1px solid #e9ecef;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: 70px;
+            display: flex;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            color: #007bff;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .nav-link {
+            color: #495057;
+            text-decoration: none;
+            font-size: 1rem;
+            transition: color 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-link:hover {
+            color: #007bff;
+        }
+
+        .main-content {
+            height: calc(100vh - 70px);
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .page-header h1 {
+            color: #ffffff;
+            text-shadow: 0 0 5px #007bff, 0 0 10px #007bff, 0 0 20px #007bff;
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+
+        .form-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            height: calc(100vh - 200px);
+        }
+
+        .form-section {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border: 1px solid #e9ecef;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid #f8f9fa;
+        }
+
+        .section-header h3 {
+            color: #212529;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .section-header i {
+            color: #007bff;
+            font-size: 1.2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #495057;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .required {
+            color: #dc3545;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+
+        .form-control:disabled {
+            background-color: #f8f9fa;
+            color: #6c757d;
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .auto-field {
+            background-color: #f8f9fa;
+            border: 2px dashed #ced4da;
+            color: #6c757d;
+            text-align: center;
+            padding: 1rem;
+            border-radius: 4px;
+            font-style: italic;
+        }
+
+        .submit-section {
+            margin-top: auto;
+            padding-top: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .btn-primary:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .alert {
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .alert-success {
+            color: #155724;
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+
+        .alert-error {
+            color: #721c24;
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+
+        .success-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .success-content {
+            background: white;
+            padding: 3rem;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .success-icon {
+            font-size: 4rem;
+            color: #28a745;
+            margin-bottom: 1rem;
+        }
+
+        .success-content h2 {
+            color: #212529;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .success-details {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+            text-align: left;
+        }
+
+        .success-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            flex: 1;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+
+        @media (max-width: 1200px) {
+            .form-container {
+                grid-template-columns: 1fr 1fr;
+                gap: 1.5rem;
+            }
+            
+            .form-section:last-child {
+                grid-column: 1 / -1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .form-container {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+                height: auto;
+            }
+            
+            .main-content {
+                height: auto;
+                overflow-y: visible;
+            }
+            
+            body {
+                overflow: visible;
+            }
+        }
+    
+        .ai-prediction {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+        
+        .ai-confidence-high { color: #28a745 !important; }
+        .ai-confidence-medium { color: #ffc107 !important; }
+        .ai-confidence-low { color: #dc3545 !important; }
+        
+        .ai-reasoning {
+            background: rgba(102, 126, 234, 0.1);
+            border-left: 4px solid #667eea;
+        }
+        
+        #aiExpiryDate {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            border: 2px solid #667eea;
+            color: #495057;
+            font-weight: 500;
+        }
+
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="container">
+                <a href="/" class="logo">SampleStorage</a>
+                <div class="nav-links">
+                     <span class="user-info">
+                        <i class="fas fa-user-circle" id="userIcon"></i>
+                        <span id="staffName">Loading...</span>
+                    </span>
+                    <a href="/staff-dashboard" class="nav-link">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                    <a href="/profile" class="nav-link">
+                        <i class="fas fa-user"></i> Profile
+                    </a>
+                    <a href="/logout" class="nav-link">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h1><i class="fas fa-vial"></i> Register New Sample</h1>
+        </div>
+
+        <div id="message" class="alert" style="display: none;"></div>
+
+        <form id="sampleRegistrationForm" class="form-container">
+            <div class="form-section">
+                <div class="section-header">
+                    <i class="fas fa-flask"></i>
+                    <h3>Sample Information</h3>
+                </div>
+
+                <div class="form-group">
+                    <label for="sampleType">Sample Type <span class="required">*</span></label>
+                    <select id="sampleType" name="sampleType" class="form-control" required>
+                        <option value="">Select sample type...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="testType">Test Type <span class="required">*</span></label>
+                    <select id="testType" name="testType" class="form-control" required disabled>
+                        <option value="">Select sample type first...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="storageLocation">Storage Location <span class="required">*</span></label>
+                    <select id="storageLocation" name="storageLocation" class="form-control" required disabled>
+                        <option value="">Select sample type first...</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="section-header">
+                    <i class="fas fa-user"></i>
+                    <h3>Patient Information</h3>
+                </div>
+
+                <div class="form-group">
+                    <label for="patientName">Patient Name <span class="required">*</span></label>
+                    <input type="text" id="patientName" name="patientName" class="form-control" 
+                           placeholder="Enter patient full name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="patientId">Patient ID <span class="required">*</span></label>
+                    <input type="text" id="patientId" name="patientId" class="form-control" 
+                           placeholder="Enter patient ID or medical record number" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="collectionDate">Collection Date <span class="required">*</span></label>
+                    <input type="date" id="collectionDate" name="collectionDate" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="notes">Notes (Optional)</label>
+                    <textarea id="notes" name="notes" class="form-control" 
+                              placeholder="Enter any additional notes or special instructions..."></textarea>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="section-header">
+                    <i class="fas fa-cog"></i>
+                    <h3>Auto-Generated Information</h3>
+                </div>
+
+                <div class="form-group">
+                    <label>Sample ID</label>
+                    <div id="sampleId" class="auto-field">Will be generated automatically</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Assigned Freezer</label>
+                    <div id="assignedFreezer" class="auto-field">Will be assigned based on storage location</div>
+                </div>
+
+                <div class="form-group">
+                    <label>🤖 AI Predicted Expiry Date</label>
+                    <div id="aiExpiryDate" class="auto-field">
+                        <i class="fas fa-brain"></i> AI will predict expiry date based on your selections
+                    </div>
+                    <div id="aiConfidence" style="display: none; margin-top: 0.5rem; font-size: 0.9rem; color: #28a745;">
+                        <i class="fas fa-chart-line"></i> <span id="confidenceText"></span>
+                    </div>
+                    <div id="aiReasoning" style="display: none; margin-top: 0.5rem; padding: 0.75rem; background: #f8f9fa; border-radius: 4px; font-size: 0.85rem; color: #495057;">
+                        <strong><i class="fas fa-lightbulb"></i> AI Analysis:</strong>
+                        <ul id="reasoningList" style="margin: 0.5rem 0 0 1rem; padding: 0;"></ul>
+                    </div>
+                </div>
+
+                <div class="submit-section">
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <i class="fas fa-save"></i> Register Sample
+                    </button>
+                </div>
+            </div>
+            
+            <input type="hidden" id="expiryDate" name="expiryDate">
+
+        </form>
+    </main>
+
+    
+    </div>
+    </div>
+
+    <script>
+        let sampleTypes = [];
+        let allTests = [];
+        let allStorageLocations = [];
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🚀 Initializing register sample page...');
+            await loadStaffProfile();
+            await loadSampleTypes();
+            
+            // Set today's date as default
+            document.getElementById('collectionDate').value = new Date().toISOString().split('T')[0];
+            
+            // Setup event listeners
+            setupEventListeners();
+        });
+
+        async function loadStaffProfile() {
+            try {
+                console.log('👤 Loading staff profile...');
+                const response = await fetch('/api/profile');
+                if (response.ok) {
+                    const profile = await response.json();
+                    document.getElementById('staffName').textContent = profile.full_name || 'Staff Member';
+                    console.log('✅ Staff profile loaded:', profile.full_name);
+                } else {
+                    console.warn('⚠️ Could not load staff profile');
+                }
+            } catch (error) {
+                console.error('❌ Error loading profile:', error);
+            }
+        }
+
+        async function loadSampleTypes() {
+            try {
+                console.log('📡 Fetching sample types from database...');
+                const response = await fetch('/api/sample-types');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                sampleTypes = await response.json();
+                console.log('✅ Sample types loaded from database:', sampleTypes);
+                
+                const sampleTypeSelect = document.getElementById('sampleType');
+                
+                // Clear existing options
+                sampleTypeSelect.innerHTML = '<option value="">Select sample type...</option>';
+                
+                // Add sample types from database
+                if (sampleTypes && sampleTypes.length > 0) {
+                    sampleTypes.forEach(type => {
+                        const option = document.createElement('option');
+                        option.value = type.type_id;
+                        option.textContent = type.type_name;
+                        sampleTypeSelect.appendChild(option);
+                        console.log(`   Added: ${type.type_name} (ID: ${type.type_id})`);
+                    });
+                    console.log(`✅ Populated ${sampleTypes.length} sample types`);
+                } else {
+                    console.warn('⚠️ No sample types found in database');
+                    sampleTypeSelect.innerHTML = '<option value="">No sample types available</option>';
+                }
+                
+            } catch (error) {
+                console.error('❌ Error loading sample types:', error);
+                showMessage('Error loading sample types: ' + error.message, true);
+                
+                // Fallback to show error in dropdown
+                const sampleTypeSelect = document.getElementById('sampleType');
+                sampleTypeSelect.innerHTML = '<option value="">Error loading sample types</option>';
+            }
+        }
+
+        function setupEventListeners() {
+            // Sample type change handler
+            document.getElementById('sampleType').addEventListener('change', handleSampleTypeChange);
+            
+            // Storage location change handler
+            document.getElementById('storageLocation').addEventListener('change', handleStorageLocationChange);
+            
+            // Form submission handler
+            document.getElementById('sampleRegistrationForm').addEventListener('submit', handleFormSubmission);
+        }
+
+        async function handleSampleTypeChange(e) {
+            const typeId = e.target.value;
+            const testSelect = document.getElementById('testType');
+            const storageSelect = document.getElementById('storageLocation');
+            
+            console.log('🔄 Sample type changed to ID:', typeId);
+            
+            // Reset dependent fields
+            testSelect.innerHTML = '<option value="">Loading tests...</option>';
+            storageSelect.innerHTML = '<option value="">Loading storage locations...</option>';
+            testSelect.disabled = true;
+            storageSelect.disabled = true;
+            
+            // Clear auto-generated fields
+            clearAutoGeneratedFields();
+            
+            if (!typeId) {
+                testSelect.innerHTML = '<option value="">Select sample type first...</option>';
+                storageSelect.innerHTML = '<option value="">Select sample type first...</option>';
+                return;
+            }
+            
+            try {
+                // Load tests for this sample type
+                console.log('📡 Loading tests for sample type ID:', typeId);
+                const testsResponse = await fetch(`/api/sample-tests/${typeId}`);
+                
+                if (testsResponse.ok) {
+                    allTests = await testsResponse.json();
+                    console.log('✅ Tests loaded:', allTests);
+                    
+                    testSelect.innerHTML = '<option value="">Select test type...</option>';
+                    if (allTests && allTests.length > 0) {
+                        allTests.forEach(test => {
+                            const option = document.createElement('option');
+                            option.value = test.test_id;
+                            option.textContent = test.test_name;
+                            testSelect.appendChild(option);
+                        });
+                        testSelect.disabled = false;
+                        console.log(`✅ Populated ${allTests.length} test types`);
+                    } else {
+                        testSelect.innerHTML = '<option value="">No tests available for this sample type</option>';
+                        console.warn('⚠️ No tests found for sample type:', typeId);
+                    }
+                } else {
+                    throw new Error(`Failed to load tests: ${testsResponse.status}`);
+                }
+                
+                // Load storage locations for this sample type
+                console.log('📡 Loading storage locations for sample type ID:', typeId);
+                const storageResponse = await fetch(`/api/sample-storage/${typeId}`);
+                
+                if (storageResponse.ok) {
+                    allStorageLocations = await storageResponse.json();
+                    console.log('✅ Storage locations loaded:', allStorageLocations);
+                    
+                    storageSelect.innerHTML = '<option value="">Select storage location...</option>';
+                    if (allStorageLocations && allStorageLocations.length > 0) {
+                        allStorageLocations.forEach(storage => {
+                            const option = document.createElement('option');
+                            option.value = storage.storage_id;
+                            const displayText = storage.storage_name + 
+                                (storage.temperature_range ? ` (${storage.temperature_range})` : '');
+                            option.textContent = displayText;
+                            storageSelect.appendChild(option);
+                        });
+                        storageSelect.disabled = false;
+                        console.log(`✅ Populated ${allStorageLocations.length} storage locations`);
+                    } else {
+                        storageSelect.innerHTML = '<option value="">No storage locations available for this sample type</option>';
+                        console.warn('⚠️ No storage locations found for sample type:', typeId);
+                    }
+                } else {
+                    throw new Error(`Failed to load storage locations: ${storageResponse.status}`);
+                }
+                
+            } catch (error) {
+                console.error('❌ Error loading dependent data:', error);
+                showMessage('Error loading test types and storage locations: ' + error.message, true);
+                
+                testSelect.innerHTML = '<option value="">Error loading tests</option>';
+                storageSelect.innerHTML = '<option value="">Error loading storage locations</option>';
+            }
+        }
+
+        async function handleStorageLocationChange(e) {
+            const storageId = e.target.value;
+            
+            if (!storageId) {
+                clearAutoGeneratedFields();
+                return;
+            }
+            
+            try {
+                console.log('🏠 Assigning freezer for storage ID:', storageId);
+                
+                // Get freezer assignment
+                const freezerResponse = await fetch(`/api/assign-freezer/${storageId}`);
+                if (freezerResponse.ok) {
+                    const freezerData = await freezerResponse.json();
+                    console.log('✅ Freezer assigned:', freezerData);
+                    
+                    // Update assigned freezer field
+                    document.getElementById('assignedFreezer').textContent = 
+                        freezerData.freezer_name || 'No suitable freezer found';
+                    
+                    // Generate sample ID preview
+                    await generateSampleIdPreview();
+                    
+                    // Get AI expiry prediction
+                    await predictExpiry();
+                } else {
+                    throw new Error(`Freezer assignment failed: ${freezerResponse.status}`);
+                }
+            } catch (error) {
+                console.error('❌ Error assigning freezer:', error);
+                showMessage('Error assigning freezer: ' + error.message, true);
+            }
+        }
+
+        async function generateSampleIdPreview() {
+            try {
+                console.log('🆔 Generating sample ID preview...');
+                const response = await fetch('/api/generate-sample-id');
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('✅ Generated sample ID:', data.sample_id);
+                    document.getElementById('sampleId').textContent = data.sample_id;
+                } else {
+                    throw new Error(`Sample ID generation failed: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('❌ Error generating sample ID:', error);
+                document.getElementById('sampleId').textContent = 'Error generating ID';
+            }
+        }
+
+        async function predictExpiry() {
+            const sampleType = document.getElementById('sampleType').value;
+            const testType = document.getElementById('testType').value;
+            const storageLocation = document.getElementById('storageLocation').value;
+            const sampleId = document.getElementById('sampleId').textContent;
+            
+            if (!sampleType || !testType || !storageLocation || !sampleId || sampleId === 'Will be generated automatically') {
+                console.log('⏳ Waiting for all selections before AI prediction...');
+                return;
+            }
+            
+            try {
+                console.log('🤖 Requesting AI expiry prediction...');
+                const response = await fetch('/api/predict-expiry', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({sampleId, sampleType, testType, storageLocation })
+                });
+                
+                if (response.ok) {
+                    const prediction = await response.json();
+                    console.log('✅ AI prediction received:', prediction);
+                    
+                    if (prediction.success) {
+                        // Update AI prediction display
+                        updateAIPredictionDisplay(prediction);
+                    } else {
+                        throw new Error(prediction.message || 'AI prediction failed');
+                    }
+                } else {
+                    throw new Error(`AI prediction API error: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('❌ AI prediction error:', error);
+                showAIPredictionError(error.message);
+            }
+        }
+
+       function updateAIPredictionDisplay(prediction) {
+            console.log('🎯 AI Prediction:', prediction);
+
+            // Update expiry date field only
+            document.getElementById('aiExpiryDate').innerHTML = `
+                <i class="fas fa-calendar-check"></i> ${prediction.expiry_date} (${prediction.days_from_now} days from now)
+            `;
+
+            // Also update hidden input for backend submission
+            document.getElementById("expiryDate").value = prediction.expiry_date;
+
+            // Hide confidence and reasoning sections
+            document.getElementById('aiConfidence').style.display = 'none';
+            document.getElementById('aiReasoning').style.display = 'none';
+        }
+
+
+
+        function showAIPredictionError(message) {
+            console.warn('⚠️ AI Prediction Error:', message);
+            // Show error in AI section when implemented
+        }
+
+        function clearAutoGeneratedFields() {
+            document.getElementById('sampleId').textContent = 'Will be generated automatically';
+            document.getElementById('assignedFreezer').textContent = 'Will be assigned based on storage location';
+        }
+
+        async function handleFormSubmission(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const form = e.target;
+            
+            console.log('📝 Submitting sample registration form...');
+            
+            // Disable form during submission
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registering Sample...';
+            form.classList.add('loading');
+            
+            try {
+                const formData = new FormData(form);
+                const sampleData = {
+                    sampleType: formData.get('sampleType'),
+                    testType: formData.get('testType'),
+                    storageLocation: formData.get('storageLocation'),
+                    patientName: formData.get('patientName'),
+                    patientId: formData.get('patientId'),
+                    collectionDate: formData.get('collectionDate'),
+                    expiryDate: formData.get('expiryDate'),  // 🔥 add this line
+                    notes: formData.get('notes')
+                }
+
+                console.log('📤 Sending sample data:', sampleData);
+                
+                const response = await fetch('/api/register-sample', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(sampleData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    console.log('✅ Sample registered successfully:', result);
+                    showSuccess(result);
+                } else {
+                    throw new Error(result.message || 'Failed to register sample');
+                }
+            } catch (error) {
+                console.error('❌ Error registering sample:', error);
+                showMessage('Error registering sample: ' + error.message, true);
+            } finally {
+                // Re-enable form
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-save"></i> Register Sample';
+                form.classList.remove('loading');
+            }
+        }
+
+        function showSuccess(result) {
+            // Simple alert for now
+            alert(`Sample registered successfully! Sample ID: ${result.sample_id}`);
+            
+            // Reset the form
+            document.getElementById('sampleRegistrationForm').reset();
+            clearAutoGeneratedFields();
+            document.getElementById('testType').disabled = true;
+            document.getElementById('storageLocation').disabled = true;
+            document.getElementById('collectionDate').value = new Date().toISOString().split('T')[0];
+        }
+
+        function showMessage(message, isError = true) {
+            const messageDiv = document.getElementById('message');
+            if (!messageDiv) return;
+
+            messageDiv.textContent = message;
+            messageDiv.style.display = 'block';
+            messageDiv.className = isError ? 'alert alert-error' : 'alert alert-success';
+
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

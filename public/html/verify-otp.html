@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify OTP - Sample Storage System</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <header>
+        <nav class="navbar container">
+            <a href="/" class="logo">SampleStorage</a>
+            <div class="nav-links">
+                <a href="/">Home</a>
+                <a href="/login">Login</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container">
+        <div class="auth-container card">
+            <div class="auth-header">
+                <h2>Verify OTP</h2>
+                <p>Enter the OTP sent to your email</p>
+            </div>
+            
+            <div id="message" class="alert" style="display: none;"></div>
+            
+            <form id="verifyOtpForm" action="/verify-otp" method="POST">
+                <input type="hidden" id="email" name="email" value="">
+                <input type="hidden" id="userType" name="userType" value="">
+                
+                <div class="form-group">
+                    <label for="otp">Enter OTP:</label>
+                    <input type="text" id="otp" name="otp" class="form-control" maxlength="6" required>
+                    <small class="form-text">Enter the 6-digit code sent to you</small>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-block">Verify OTP</button>
+            </form>
+            
+            <div class="text-center mt-3">
+                <p><a href="/forgot-password" class="link">Back to Reset Password</a></p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Get email and type from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const email = urlParams.get('email');
+        const userType = urlParams.get('type');
+        
+        if (email && userType) {
+            document.getElementById('email').value = email;
+            document.getElementById('userType').value = userType;
+        }
+    </script>
+    <script src="/js/script.js"></script>
+</body>
+</html>

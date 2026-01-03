@@ -1,0 +1,1304 @@
+require("dotenv").config()
+const express = require("express")
+const mysql = require("mysql2")
+const bodyParser = require("body-parser")
+const bcrypt = require("bcryptjs")
+const session = require("express-session")
+const path = require("path")
+const crypto = require("crypto")
+const nodemailer = require("nodemailer")
+const fs = require("fs")
+
+// Import upload middleware
+const upload = require("./middleware/upload")
+
+const app = express()
+
+// Database connection using environment variables
+const db = mysql.createConnection({
+  host: process.env.DB_HOST || "localhost",
+  user: process.env.DB_USER || "root",
+  password: process.env.DB_PASSWORD || "",
+  database: process.env.DB_NAME || "fyp2",
+})
+
+db.connect((err) => {
+  if (err) {
+    console.error("Database connection failed:", err)
+    process.exit(1)
+  }
+})
+
+// Email configuration using environment variables
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+})
+
+transporter.verify((error) => {
+  if (error) {
+    console.error("Email configuration error:", error)
+  }
+})
+
+// Middleware
+app.use(bodyParser.urlencoded({ extended: true }))
+app.use(bodyParser.json())
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "fallback_secret_key",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: false, // Set to true if using HTTPS
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    },
+  }),
+)
+
+// Serve static files
+app.use(express.static("public"))
+
+// Routes
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public/html/home.html"))
+})
+
+app.get("/login", (req, res) => {
+  res.sendFile(path.join(__dirname, "public/html/login.html"))
+})
+
+app.get("/register", (req, res) => {
+  res.sendFile(path.join(__dirname, "public/html/register.html"))
+})
+
+app.get("/forgot-password", (req, res) => {
+  res.sendFile(path.join(__dirname, "public/html/forgot-password.html"))
+})
+
+app.get("/verify-otp", (req, res) => {
+  res.sendFile(path.join(__dirname, "public/html/verify-otp.html"))
+})
+
+app.get("/reset-password", (req, res) => {
+  res.sendFile(path.join(__dirname, "public/html/reset-password.html"))
+})
+
+app.get("/view-samples", (req, res) => {
+  if (!req.session.user) {
+    return res.redirect("/login?error=Please login to access this page")
+  }
+  res.sendFile(path.join(__dirname, "public/html/view-samples.html"))
+})
+
+app.get("/dispose-samples", (req, res) => {
+  if (!req.session.user) {
+    return res.redirect("/login?error=Please login to access this page")
+  }
+  res.sendFile(path.join(__dirname, "public/html/dispose-sample.html"))
+})
+
+
+  res.sendFile(path.join(__dirname, "public/html/test-samples-simple.html"))
+})
+
+app.post("/register", async (req, res) => {
+  const { username, email, password, full_name, phone_number, department } = req.body
+
+  try {
+    if (!username || !email || !password || !full_name || !phone_number || !department) {
+      return res.status(400).send("All fields are required");
+    }
+
+    const [existingUser] = await db
+      .promise()
+      .query("SELECT * FROM staff WHERE email = ? OR username = ?", [email, username])
+
+    if (existingUser.length > 0) {
+      return res.status(400).send("Username or email already exists")
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12)
+
+    await db
+      .promise()
+      .query(
+        "INSERT INTO staff (username, email, password, full_name, phone_number, department) VALUES (?, ?, ?, ?, ?, ?)",
+        [username, email, hashedPassword, full_name, phone_number, department],
+      )
+
+    res.redirect("/login")
+  } catch (err) {
+    console.error("Registration error:", err)
+    res.status(500).send("Error in registration")
+  }
+})
+
+app.post("/login", async (req, res) => {
+  const { username, password, userType } = req.body
+
+  try {
+    if (!username || !password || !userType) {
+      return res.status(400).send("All fields are required")
+    }
+
+    const table = userType === "admin" ? "admin" : "staff"
+    const idField = userType === "admin" ? "admin_id" : "staff_id"
+
+    const [users] = await db.promise().query(`SELECT * FROM ${table} WHERE username = ?`, [username])
+
+    if (users.length === 0) {
+      return res.status(400).send("User not found")
+    }
+
+    const user = users[0]
+    const isMatch = await bcrypt.compare(password, user.password)
+
+    if (!isMatch) {
+      return res.status(400).send("Invalid credentials")
+    }
+
+    req.session.user = {
+      id: user[idField],
+      username: user.username,
+      email: user.email,
+      type: userType,
+    }
+
+    res.redirect(userType === "admin" ? "/admin-dashboard" : "/staff-dashboard")
+  } catch (err) {
+    console.error("Login error:", err)
+    res.status(500).send("Error in login")
+  }
+})
+
+app.post("/forgot-password", async (req, res) => {
+  const { userType, contactMethod, contact } = req.body
+
+  try {
+    if (!userType || !contactMethod || !contact) {
+      return res.status(400).send("All fields are required")
+    }
+
+    const table = userType === "admin" ? "admin" : "staff"
+    const field = contactMethod === "email" ? "email" : "phone_number"
+
+    const [users] = await db.promise().query(`SELECT * FROM ${table} WHERE ${field} = ?`, [contact])
+
+    if (users.length === 0) {
+      return res.status(400).send("User not found with this " + contactMethod)
+    }
+
+    const user = users[0]
+
+    const otp = crypto.randomInt(100000, 999999).toString()
+    const otpExpiry = new Date(Date.now() + 15 * 60000) // 15 minutes
+
+    await db
+      .promise()
+      .query(`UPDATE ${table} SET reset_otp = ?, otp_expiry = ? WHERE ${field} = ?`, [otp, otpExpiry, contact])
+
+    if (contactMethod === "email") {
+      await sendOTPEmail(contact, otp, user.full_name || user.username)
+    } else {
+      await sendOTPSMS(contact, otp)
+    }
+
+    res.redirect(`/verify-otp?email=${encodeURIComponent(contact)}&type=${userType}`)
+  } catch (err) {
+    console.error("Forgot password error:", err)
+    res.status(500).send("Error sending OTP")
+  }
+})
+
+app.post("/verify-otp", async (req, res) => {
+  const { email, otp, userType } = req.body
+
+  try {
+    if (!email || !otp || !userType) {
+      return res.status(400).send("Email, OTP, and user type are required")
+    }
+
+    const table = userType === "admin" ? "admin" : "staff"
+
+    const [users] = await db
+      .promise()
+      .query(`SELECT * FROM ${table} WHERE email = ? AND reset_otp = ? AND otp_expiry > NOW()`, [email, otp])
+
+    if (users.length === 0) {
+      return res.status(400).send("Invalid or expired OTP")
+    }
+
+    res.redirect(`/reset-password?email=${encodeURIComponent(email)}&type=${userType}&verified=true`)
+  } catch (err) {
+    console.error("OTP verification error:", err)
+    res.status(500).send("Error verifying OTP")
+  }
+})
+
+app.post("/reset-password", async (req, res) => {
+  const { email, newPassword, userType } = req.body
+
+  try {
+    if (!email || !newPassword || !userType) {
+      return res.status(400).send("Email, new password, and user type are required")
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).send("Password must be at least 8 characters long")
+    }
+
+    const table = userType === "admin" ? "admin" : "staff"
+
+    const [users] = await db.promise().query(`SELECT * FROM ${table} WHERE email = ?`, [email])
+
+    if (users.length === 0) {
+      return res.status(400).send("User not found")
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 12)
+
+    await db
+      .promise()
+      .query(`UPDATE ${table} SET password = ?, reset_otp = NULL, otp_expiry = NULL WHERE email = ?`, [
+        hashedPassword,
+        email,
+      ])
+
+    res.redirect("/login?message=Password reset successfully")
+  } catch (err) {
+    console.error("Password reset error:", err)
+    res.status(500).send("Error resetting password")
+  }
+})
+
+app.get("/staff-dashboard", (req, res) => {
+  if (!req.session.user || req.session.user.type !== "staff") {
+    return res.redirect("/login?error=Please login to access the dashboard")
+  }
+  res.sendFile(path.join(__dirname, "public/html/staff-dashboard.html"))
+})
+
+app.get("/admin-dashboard", (req, res) => {
+  if (!req.session.user || req.session.user.type !== "admin") {
+    return res.redirect("/login?error=Please login to access the dashboard")
+  }
+  res.sendFile(path.join(__dirname, "public/html/admin-dashboard.html"))
+})
+
+app.get("/admin-reports", (req, res) => {
+  if (!req.session.user || req.session.user.type !== "admin") {
+    return res.redirect("/login?error=Admin access required")
+  }
+  res.sendFile(path.join(__dirname, "public/html/admin-reports.html"))
+})
+
+app.get("/profile", (req, res) => {
+  if (!req.session.user) {
+    return res.redirect("/login?error=Please login to access your profile")
+  }
+  res.sendFile(path.join(__dirname, "public/html/staff-profile.html"))
+})
+
+app.get("/staff-profile", (req, res) => {
+  if (!req.session.user) {
+    return res.redirect("/login?error=Please login to access your profile")
+  }
+  res.sendFile(path.join(__dirname, "public/html/staff-profile.html"))
+})
+
+app.get("/staff-ranking", (req, res) => {
+  if (!req.session.user) {
+    return res.redirect("/login?error=Please login to access staff rankings")
+  }
+  res.sendFile(path.join(__dirname, "public/html/staff-ranking.html"))
+})
+
+app.get("/manage-users", (req, res) => {
+  if (!req.session.user || req.session.user.type !== "admin") {
+    return res.redirect("/login?error=Admin access required")
+  }
+  res.sendFile(path.join(__dirname, "public/html/manage-users.html"))
+})
+
+app.post("/api/profile/image", upload.single("profileImage"), async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ message: "Unauthorized" })
+  }
+
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No image file provided" })
+    }
+
+    const table = req.session.user.type === "admin" ? "admin" : "staff"
+    const idField = req.session.user.type === "admin" ? "admin_id" : "staff_id"
+    const imagePath = `/uploads/profiles/${req.file.filename}`
+
+    const [currentUser] = await db
+      .promise()
+      .query(`SELECT profile_picture FROM ${table} WHERE ${idField} = ?`, [req.session.user.id])
+
+    await db
+      .promise()
+      .query(`UPDATE ${table} SET profile_picture = ? WHERE ${idField} = ?`, [imagePath, req.session.user.id])
+
+    if (currentUser[0] && currentUser[0].profile_picture) {
+      const oldImagePath = path.join(__dirname, "public", currentUser[0].profile_picture)
+      if (fs.existsSync(oldImagePath)) {
+        fs.unlinkSync(oldImagePath)
+      }
+    }
+
+    res.json({
+      success: true,
+      imageUrl: imagePath,
+      message: "Profile picture updated successfully",
+    })
+  } catch (error) {
+    console.error("Image upload error:", error)
+
+    if (req.file) {
+      const filePath = path.join(__dirname, "public/uploads/profiles", req.file.filename)
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath)
+      }
+    }
+
+    res.status(500).json({ message: "Error uploading image" })
+  }
+})
+
+app.get("/api/profile", async (req, res) => {
+  if (!req.session?.user) {
+    return res.status(401).json({ message: "Unauthorized - No session" })
+  }
+
+  try {
+    const table = req.session.user.type === "admin" ? "admin" : "staff"
+    const idField = req.session.user.type === "admin" ? "admin_id" : "staff_id"
+    const userId = req.session.user.id
+
+    const [userData] = await db.promise().query(`SELECT * FROM ${table} WHERE ${idField} = ?`, [userId])
+
+    if (userData.length === 0) {
+      return res.status(404).json({ message: "User not found" })
+    }
+
+    const user = userData[0]
+
+    const [sampleStats] = await db.promise().query(
+      `
+      SELECT 
+        COUNT(*) as total_samples,
+        SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_samples,
+        SUM(CASE WHEN status = 'disposed' THEN 1 ELSE 0 END) as disposed_samples
+      FROM samples 
+      WHERE staff_id = ?
+    `,
+      [userId],
+    )
+
+    const stats = sampleStats[0] || { total_samples: 0, active_samples: 0, disposed_samples: 0 }
+
+    const totalSamples = Number.parseInt(stats.total_samples) || 0
+    const activeSamples = Number.parseInt(stats.active_samples) || 0
+    const disposedSamples = Number.parseInt(stats.disposed_samples) || 0
+
+    const profileData = {
+      staff_id: user[idField],
+      full_name: user.full_name,
+      username: user.username,
+      email: user.email,
+      department: user.department || "N/A",
+      phone_number: user.phone_number || "N/A",
+      profile_picture: user.profile_picture || null,
+      created_at: user.created_at,
+      samples_registered: totalSamples,
+      samples_disposed: disposedSamples,
+      active_samples: activeSamples,
+    }
+
+    res.json(profileData)
+  } catch (error) {
+    console.error("Profile error:", error)
+    res.status(500).json({ message: "Server error: " + error.message })
+  }
+})
+
+app.get("/api/staff-rankings", async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ message: "Unauthorized" })
+  }
+
+  try {
+    const [staffData] = await db.promise().query(`
+      SELECT 
+        s.staff_id,
+        s.full_name,
+        s.username,
+        s.department,
+        s.profile_picture,
+        s.created_at,
+        COALESCE(sample_stats.total_samples, 0) as samples_registered,
+        COALESCE(sample_stats.disposed_samples, 0) as samples_disposed,
+        COALESCE(sample_stats.active_samples, 0) as active_samples,
+        CASE 
+          WHEN COALESCE(sample_stats.total_samples, 0) > 0 
+          THEN ROUND((COALESCE(sample_stats.disposed_samples, 0) / COALESCE(sample_stats.total_samples, 0)) * 100)
+          ELSE 0 
+        END as completion_rate
+      FROM staff s
+      LEFT JOIN (
+        SELECT 
+          staff_id,
+          COUNT(*) as total_samples,
+          SUM(CASE WHEN status = 'disposed' THEN 1 ELSE 0 END) as disposed_samples,
+          SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_samples
+        FROM samples 
+        GROUP BY staff_id
+      ) sample_stats ON s.staff_id = sample_stats.staff_id
+      ORDER BY s.full_name
+    `)
+
+    const staffWithScores = staffData.map((staff) => {
+      const registered = Number.parseInt(staff.samples_registered) || 0
+      const disposed = Number.parseInt(staff.samples_disposed) || 0
+      const completionRate = Number.parseInt(staff.completion_rate) || 0
+
+      const baseScore = registered * 10
+      const completionBonus = disposed * 15
+      const efficiencyBonus = completionRate > 80 ? 100 : 0
+      const performanceScore = baseScore + completionBonus + efficiencyBonus
+
+      return {
+        ...staff,
+        performance_score: performanceScore,
+        samples_registered: registered,
+        samples_disposed: disposed,
+        active_samples: Number.parseInt(staff.active_samples) || 0,
+        completion_rate: completionRate,
+      }
+    })
+
+    res.json(staffWithScores)
+  } catch (error) {
+    console.error("Staff rankings error:", error)
+    res.status(500).json({ message: "Server error: " + error.message })
+  }
+})
+
+app.get("/api/admin/users", async (req, res) => {
+  if (!req.session.user || req.session.user.type !== "admin") {
+    return res.status(401).json({ message: "Admin access required" })
+  }
+
+  try {
+    const [users] = await db.promise().query(`
+      SELECT 
+        staff_id,
+        username,
+        email,
+        full_name,
+        phone_number,
+        department,
+        created_at,
+        profile_picture
+      FROM staff 
+      ORDER BY full_name ASC
+    `)
+
+    res.json(users)
+  } catch (error) {
+    console.error("Admin users error:", error)
+    res.status(500).json({ message: "Server error: " + error.message })
+  }
+})
+
+app.get("/api/admin/reports-stats", async (req, res) => {
+  if (!req.session.user || req.session.user.type !== "admin") {
+    return res.status(401).json({ message: "Admin access required" })
+  }
+
+  try {
+    const [totalSamplesResult] = await db.promise().query("SELECT COUNT(*) as total FROM samples")
+    const totalSamples = totalSamplesResult[0].total
+
+    const [activeSamplesResult] = await db
+      .promise()
+      .query("SELECT COUNT(*) as total FROM samples WHERE status = 'active'")
+    const activeSamples = activeSamplesResult[0].total
+
+    const [disposedSamplesResult] = await db
+      .promise()
+      .query("SELECT COUNT(*) as total FROM samples WHERE status = 'disposed'")
+    const disposedSamples = disposedSamplesResult[0].total
+
+    const [totalStaffResult] = await db.promise().query("SELECT COUNT(*) as total FROM staff")
+    const totalStaff = totalStaffResult[0].total
+
+    const responseData = {
+      totalSamples,
+      activeSamples,
+      disposedSamples,
+      totalStaff,
+    }
+
+    res.json(responseData)
+  } catch (error) {
+    console.error("Error in reports stats endpoint:", error)
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+      totalSamples: 0,
+      activeSamples: 0,
+      disposedSamples: 0,
+      totalStaff: 0,
+    })
+  }
+})
+
+app.get("/api/recent-activity", async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ message: "Unauthorized" })
+  }
+
+  try {
+    const [activities] = await db.promise().query(
+      `
+      SELECT 
+        sample_id,
+        status,
+        registration_date,
+        disposal_date,
+        patient_name,
+        disposal_reason
+      FROM samples 
+      WHERE staff_id = ? 
+      ORDER BY 
+        CASE 
+          WHEN disposal_date IS NOT NULL THEN disposal_date 
+          ELSE registration_date 
+        END DESC 
+      LIMIT 10
+    `,
+      [req.session.user.id],
+    )
+
+    const formattedActivities = activities.map((activity) => {
+      if (activity.status === "disposed" && activity.disposal_date) {
+        return {
+          id: activity.sample_id,
+          type: "dispose",
+          sample_id: activity.sample_id,
+          description: `disposed - ${activity.disposal_reason || "No reason specified"}`,
+          created_at: activity.disposal_date,
+          patient_name: activity.patient_name,
+        }
+      } else {
+        return {
+          id: activity.sample_id,
+          type: "register",
+          sample_id: activity.sample_id,
+          description: `registered for patient ${activity.patient_name}`,
+          created_at: activity.registration_date,
+          patient_name: activity.patient_name,
+        }
+      }
+    })
+
+    res.json(formattedActivities)
+  } catch (error) {
+    console.error("Recent activity error:", error)
+    res.status(500).json({ message: "Server error" })
+  }
+})
+
+app.get("/api/admin/system-overview", async (req, res) => {
+  if (!req.session.user || req.session.user.type !== "admin") {
+    return res.status(401).json({ message: "Admin access required" })
+  }
+
+  try {
+    let totalStaff = 0
+    let activeSamples = 0
+    let totalFreezers = 0
+    let sampleTypes = 0
+    let storageLocations = 0
+    let systemHealth = "Unknown"
+
+    try {
+      const [staffResult] = await db.promise().query("SELECT COUNT(*) as total FROM staff")
+      totalStaff = staffResult[0].total
+    } catch (error) {
+      console.error("Error fetching staff count:", error.message)
+    }
+
+    try {
+      const [testsResult] = await db.promise().query("SELECT COUNT(*) as total FROM sample_tests")
+      activeSamples = testsResult[0].total
+    } catch (error) {
+      console.error("Error fetching sample tests count:", error.message)
+    }
+
+    try {
+      const [freezerResult] = await db.promise().query("SELECT COUNT(*) as total FROM freezer")
+      totalFreezers = freezerResult[0].total
+    } catch (error) {
+      console.error("Error fetching freezer count:", error.message)
+    }
+
+    try {
+      const [typesResult] = await db.promise().query("SELECT COUNT(*) as total FROM sample_types")
+      sampleTypes = typesResult[0].total
+    } catch (error) {
+      console.error("Error fetching sample types count:", error.message)
+    }
+
+    try {
+      const [storageResult] = await db.promise().query("SELECT COUNT(*) as total FROM sample_storage")
+      storageLocations = storageResult[0].total
+    } catch (error) {
+      console.error("Error fetching storage locations count:", error.message)
+    }
+
+    if (totalStaff > 0 && sampleTypes > 0) {
+      systemHealth = "Excellent"
+    } else if (totalStaff > 0) {
+      systemHealth = "Good"
+    } else {
+      systemHealth = "Attention Required"
+    }
+
+    const responseData = {
+      totalStaff,
+      activeSamples,
+      systemHealth,
+      totalFreezers,
+      sampleTypes,
+      storageLocations,
+    }
+
+    res.json(responseData)
+  } catch (error) {
+    console.error("Error in system overview endpoint:", error)
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+      totalStaff: 0,
+      activeSamples: 0,
+      systemHealth: "Error",
+      totalFreezers: 0,
+      sampleTypes: 0,
+      storageLocations: 0,
+    })
+  }
+})
+
+app.get("/admin-samples", (req, res) => {
+  if (!req.session.user || req.session.user.type !== "admin") {
+    return res.redirect("/login?error=Admin access required")
+  }
+  res.sendFile(path.join(__dirname, "public/html/admin-samples.html"))
+})
+
+app.get("/api/admin/sample-types", async (req, res) => {
+  if (!req.session.user || req.session.user.type !== "admin") {
+    return res.status(401).json({ message: "Admin access required" })
+  }
+
+  try {
+    const [sampleTypes] = await db.promise().query("SELECT * FROM sample_types ORDER BY type_name")
+    res.json(sampleTypes)
+  } catch (error) {
+    console.error("Error fetching sample types:", error)
+    res.status(500).json({ message: "Server error" })
+  }
+})
+
+app.get("/api/admin/sample-tests/:typeId", async (req, res) => {
+  if (!req.session.user || req.session.user.type !== "admin") {
+    return res.status(401).json({ message: "Admin access required" })
+  }
+
+  try {
+    const { typeId } = req.params
+    const [tests] = await db
+      .promise()
+      .query("SELECT * FROM sample_tests WHERE type_id = ? ORDER BY test_name", [typeId])
+    res.json(tests)
+  } catch (error) {
+    console.error("Error fetching sample tests:", error)
+    res.status(500).json({ message: "Server error" })
+  }
+})
+
+app.post("/api/admin/sample-tests", async (req, res) => {
+  if (!req.session.user || req.session.user.type !== "admin") {
+    return res.status(401).json({ message: "Admin access required" })
+  }
+
+  try {
+    const { type_id, test_name, description } = req.body
+
+    if (!type_id || !test_name) {
+      return res.status(400).json({ message: "Type ID and test name are required" })
+    }
+
+    await db
+      .promise()
+      .query("INSERT INTO sample_tests (type_id, test_name, description) VALUES (?, ?, ?)", [
+        type_id,
+        test_name,
+        description || null,
+      ])
+
+    res.json({ message: "Test added successfully" })
+  } catch (error) {
+    console.error("Error adding sample test:", error)
+    if (error.code === "ER_DUP_ENTRY") {
+      res.status(400).json({ message: "Test name already exists for this sample type" })
+    } else {
+      res.status(500).json({ message: "Server error" })
+    }
+  }
+})
+
+app.delete("/api/admin/sample-tests/:testId", async (req, res) => {
+  if (!req.session.user || req.session.user.type !== "admin") {
+    return res.status(401).json({ message: "Admin access required" })
+  }
+
+  try {
+    const { testId } = req.params
+    await db.promise().query("DELETE FROM sample_tests WHERE test_id = ?", [testId])
+    res.json({ message: "Test deleted successfully" })
+  } catch (error) {
+    console.error("Error deleting sample test:", error)
+    res.status(500).json({ message: "Server error" })
+  }
+})
+
+app.get("/api/admin/sample-storage/:typeId", async (req, res) => {
+  if (!req.session.user || req.session.user.type !== "admin") {
+    return res.status(401).json({ message: "Admin access required" })
+  }
+
+  try {
+    const { typeId } = req.params
+    const [storage] = await db
+      .promise()
+      .query("SELECT * FROM sample_storage WHERE type_id = ? ORDER BY storage_name", [typeId])
+    res.json(storage)
+  } catch (error) {
+    console.error("Error fetching sample storage:", error)
+    res.status(500).json({ message: "Server error" })
+  }
+})
+
+app.post("/api/admin/sample-storage", async (req, res) => {
+  if (!req.session.user || req.session.user.type !== "admin") {
+    return res.status(401).json({ message: "Admin access required" })
+  }
+
+  try {
+    const { type_id, storage_name, location_details, temperature_range } = req.body
+
+    if (!type_id || !storage_name) {
+      return res.status(400).json({ message: "Type ID and storage name are required" })
+    }
+
+    await db
+      .promise()
+      .query(
+        "INSERT INTO sample_storage (type_id, storage_name, location_details, temperature_range) VALUES (?, ?, ?, ?)",
+        [type_id, storage_name, location_details || null, temperature_range || null],
+      )
+
+    res.json({ message: "Storage location added successfully" })
+  } catch (error) {
+    console.error("Error adding sample storage:", error)
+    if (error.code === "ER_DUP_ENTRY") {
+      res.status(400).json({ message: "Storage name already exists for this sample type" })
+    } else {
+      res.status(500).json({ message: "Server error" })
+    }
+  }
+})
+
+app.delete("/api/admin/sample-storage/:storageId", async (req, res) => {
+  if (!req.session.user || req.session.user.type !== "admin") {
+    return res.status(401).json({ message: "Admin access required" })
+  }
+
+  try {
+    const { storageId } = req.params
+    await db.promise().query("DELETE FROM sample_storage WHERE storage_id = ?", [storageId])
+    res.json({ message: "Storage location deleted successfully" })
+  } catch (error) {
+    console.error("Error deleting sample storage:", error)
+    res.status(500).json({ message: "Server error" })
+  }
+})
+
+app.get("/api/sample-types", async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ message: "Unauthorized" })
+  }
+
+  try {
+    const [sampleTypes] = await db.promise().query("SELECT * FROM sample_types ORDER BY type_name")
+    res.json(sampleTypes)
+  } catch (error) {
+    console.error("Error fetching sample types:", error)
+    res.status(500).json({ message: "Server error" })
+  }
+})
+
+app.get("/api/sample-tests/:typeId", async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ message: "Unauthorized" })
+  }
+
+  try {
+    const { typeId } = req.params
+    const [tests] = await db
+      .promise()
+      .query("SELECT * FROM sample_tests WHERE type_id = ? ORDER BY test_name", [typeId])
+    res.json(tests)
+  } catch (error) {
+    console.error("Error fetching sample tests:", error)
+    res.status(500).json({ message: "Server error" })
+  }
+})
+
+app.get("/api/sample-storage/:typeId", async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ message: "Unauthorized" })
+  }
+
+  try {
+    const { typeId } = req.params
+    const [storage] = await db
+      .promise()
+      .query("SELECT * FROM sample_storage WHERE type_id = ? ORDER BY storage_name", [typeId])
+    res.json(storage)
+  } catch (error) {
+    console.error("Error fetching sample storage:", error)
+    res.status(500).json({ message: "Server error" })
+  }
+})
+
+app.get("/api/assign-freezer/:storageId", async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ message: "Unauthorized" })
+  }
+
+  try {
+    const { storageId } = req.params
+
+    const [storage] = await db.promise().query("SELECT * FROM sample_storage WHERE storage_id = ?", [storageId])
+
+    if (storage.length === 0) {
+      return res.status(404).json({ message: "Storage location not found" })
+    }
+
+    const storageLocation = storage[0]
+
+    let freezerQuery = "SELECT * FROM freezer"
+    const freezerParams = []
+
+    if (storageLocation.temperature_range) {
+      const tempRange = storageLocation.temperature_range.toLowerCase()
+
+      if (tempRange.includes("2") && tempRange.includes("8")) {
+        freezerQuery += " WHERE freezer_name LIKE '%refrigerator%'"
+      } else if (tempRange.includes("-20")) {
+        freezerQuery += " WHERE freezer_name LIKE '%standard%'"
+      } else if (tempRange.includes("-30") || tempRange.includes("-40")) {
+        freezerQuery += " WHERE freezer_name LIKE '%low%'"
+      } else if (tempRange.includes("-70") || tempRange.includes("-86")) {
+        freezerQuery += " WHERE freezer_name LIKE '%ultra%'"
+      } else if (tempRange.includes("-150") || tempRange.includes("-196")) {
+        freezerQuery += " WHERE freezer_name LIKE '%cryogenic%'"
+      }
+    }
+
+    freezerQuery += " ORDER BY freezer_id LIMIT 1"
+
+    const [freezers] = await db.promise().query(freezerQuery, freezerParams)
+
+    if (freezers.length > 0) {
+      const assignedFreezer = freezers[0]
+      res.json({
+        freezer_id: assignedFreezer.freezer_id,
+        freezer_name: assignedFreezer.freezer_name,
+        temperature_range: assignedFreezer.temperature_range,
+        storage_location: storageLocation.storage_name,
+      })
+    } else {
+      const [fallbackFreezers] = await db.promise().query("SELECT * FROM freezer ORDER BY freezer_id LIMIT 1")
+
+      if (fallbackFreezers.length > 0) {
+        const fallbackFreezer = fallbackFreezers[0]
+        res.json({
+          freezer_id: fallbackFreezer.freezer_id,
+          freezer_name: fallbackFreezer.freezer_name + " (Auto-assigned)",
+          temperature_range: fallbackFreezer.temperature_range,
+          storage_location: storageLocation.storage_name,
+        })
+      } else {
+        res.json({
+          freezer_id: null,
+          freezer_name: "No suitable freezer available",
+          temperature_range: "N/A",
+          storage_location: storageLocation.storage_name,
+        })
+      }
+    }
+  } catch (error) {
+    console.error("Error assigning freezer:", error)
+    res.status(500).json({ message: "Server error" })
+  }
+})
+
+app.get("/api/generate-sample-id", async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ message: "Unauthorized" })
+  }
+
+  try {
+    const currentYear = new Date().getFullYear()
+
+    await db.promise().query("INSERT IGNORE INTO sample_sequence (year, sequence_number) VALUES (?, 0)", [currentYear])
+
+    const [sequence] = await db
+      .promise()
+      .query("SELECT sequence_number FROM sample_sequence WHERE year = ?", [currentYear])
+
+    const nextSequence = sequence[0].sequence_number + 1
+    const sampleId = `SMP-${currentYear}-${nextSequence.toString().padStart(4, "0")}`
+
+    res.json({ sample_id: sampleId })
+  } catch (error) {
+    console.error("Error generating sample ID:", error)
+    res.status(500).json({ message: "Server error" })
+  }
+})
+
+app.post("/api/register-sample", async (req, res) => {
+  if (!req.session.user || req.session.user.type !== "staff") {
+    return res.status(401).json({ message: "Staff access required" })
+  }
+
+  try {
+    const { sampleType, testType, storageLocation, patientName, patientId, collectionDate, notes } = req.body
+
+    if (!sampleType || !testType || !storageLocation || !patientName || !patientId || !collectionDate) {
+      return res.status(400).json({ message: "All required fields must be provided" })
+    }
+
+    const currentYear = new Date().getFullYear()
+
+    await db.promise().beginTransaction()
+
+    try {
+      await db
+        .promise()
+        .query("UPDATE sample_sequence SET sequence_number = sequence_number + 1 WHERE year = ?", [currentYear])
+
+      const [sequence] = await db
+        .promise()
+        .query("SELECT sequence_number FROM sample_sequence WHERE year = ?", [currentYear])
+
+      const sampleId = `SMP-${currentYear}-${sequence[0].sequence_number.toString().padStart(4, "0")}`
+
+      const freezerResponse = await fetch(
+        `${req.protocol}://${req.get("host")}/api/assign-freezer/${storageLocation}`,
+        {
+          headers: { Cookie: req.headers.cookie },
+        },
+      )
+      const freezerData = await freezerResponse.json()
+
+      await db.promise().query(
+        `INSERT INTO samples (
+            sample_id, sample_type_id, test_id, storage_id, freezer_id, staff_id,
+            patient_name, patient_id, collection_date, notes, status
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`,
+        [
+          sampleId,
+          sampleType,
+          testType,
+          storageLocation,
+          freezerData.freezer_id,
+          req.session.user.id,
+          patientName,
+          patientId,
+          collectionDate,
+          notes || null,
+        ],
+      )
+
+      await db.promise().commit()
+
+      res.json({
+        success: true,
+        sample_id: sampleId,
+        message: "Sample registered successfully",
+        freezer_assigned: freezerData.freezer_name,
+      })
+    } catch (error) {
+      await db.promise().rollback()
+      throw error
+    }
+  } catch (error) {
+    console.error("Error registering sample:", error)
+    res.status(500).json({ message: "Error registering sample: " + error.message })
+  }
+})
+
+
+  res.sendFile(path.join(__dirname, "public/html/register-sample.html"))
+})
+
+app.get("/api/samples", async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ message: "Unauthorized" })
+  }
+
+  try {
+    let query = `
+      SELECT 
+        s.*,
+        st.type_name as sample_type_name,
+        test.test_name,
+        storage.storage_name,
+        f.freezer_name,
+        staff.full_name as staff_name
+      FROM samples s
+      LEFT JOIN sample_types st ON s.sample_type_id = st.type_id
+      LEFT JOIN sample_tests test ON s.test_id = test.test_id
+      LEFT JOIN sample_storage storage ON s.storage_id = storage.storage_id
+      LEFT JOIN freezer f ON s.freezer_id = f.freezer_id
+      LEFT JOIN staff ON s.staff_id = staff.staff_id
+    `
+
+    const params = []
+
+    if (req.session.user.type === "staff") {
+      query += " WHERE s.staff_id = ?"
+      params.push(req.session.user.id)
+    }
+
+    query += " ORDER BY s.registration_date DESC"
+
+    const [samples] = await db.promise().query(query, params)
+
+    res.json(samples)
+  } catch (error) {
+    console.error("Error fetching samples:", error)
+    res.status(500).json({ message: "Server error" })
+  }
+})
+
+app.get("/api/samples/:sampleId", async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ message: "Unauthorized" })
+  }
+
+  try {
+    const { sampleId } = req.params
+
+    let query = `
+      SELECT 
+        s.*,
+        st.type_name as sample_type_name,
+        test.test_name,
+        storage.storage_name,
+        f.freezer_name,
+        staff.full_name as staff_name
+      FROM samples s
+      LEFT JOIN sample_types st ON s.sample_type_id = st.type_id
+      LEFT JOIN sample_tests test ON s.test_id = test.test_id
+      LEFT JOIN sample_storage storage ON s.storage_id = storage.storage_id
+      LEFT JOIN freezer f ON s.freezer_id = f.freezer_id
+      LEFT JOIN staff ON s.staff_id = staff.staff_id
+      WHERE s.sample_id = ?
+    `
+
+    const params = [sampleId]
+
+    if (req.session.user.type === "staff") {
+      query += " AND s.staff_id = ?"
+      params.push(req.session.user.id)
+    }
+
+    const [samples] = await db.promise().query(query, params)
+
+    if (samples.length === 0) {
+      return res.status(404).json({ message: "Sample not found" })
+    }
+
+    res.json(samples[0])
+  } catch (error) {
+    console.error("Error fetching sample:", error)
+    res.status(500).json({ message: "Server error" })
+  }
+})
+
+app.post("/api/samples/:sampleId/dispose", async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ message: "Unauthorized" })
+  }
+
+  try {
+    const { sampleId } = req.params
+    const { reason, notes } = req.body
+
+    let checkQuery = "SELECT * FROM samples WHERE sample_id = ?"
+    const checkParams = [sampleId]
+
+    if (req.session.user.type === "staff") {
+      checkQuery += " AND staff_id = ?"
+      checkParams.push(req.session.user.id)
+    }
+
+    const [existingSamples] = await db.promise().query(checkQuery, checkParams)
+
+    if (existingSamples.length === 0) {
+      return res.status(404).json({ message: "Sample not found or access denied" })
+    }
+
+    const sample = existingSamples[0]
+
+    if (sample.status !== "active") {
+      return res.status(400).json({ message: "Sample is not active and cannot be disposed" })
+    }
+
+    await db.promise().query(
+      `UPDATE samples SET 
+         status = 'disposed', 
+         updated_at = NOW(),
+         disposal_reason = ?,
+         disposal_notes = ?,
+         disposed_by = ?,
+         disposal_date = NOW()
+       WHERE sample_id = ?`,
+      [reason || "Not specified", notes || null, req.session.user.id, sampleId],
+    )
+
+    res.json({
+      message: "Sample disposed successfully",
+      sample_id: sampleId,
+      disposed_by: req.session.user.username,
+      disposal_reason: reason || "Not specified",
+    })
+  } catch (error) {
+    console.error("Error disposing sample:", error)
+    res.status(500).json({ message: "Server error" })
+  }
+})
+
+app.get("/api/admin/staff-members", async (req, res) => {
+  if (!req.session.user || req.session.user.type !== "admin") {
+    return res.status(401).json({ message: "Admin access required" })
+  }
+
+  try {
+    const [staff] = await db
+      .promise()
+      .query("SELECT staff_id, full_name, username, email, department FROM staff ORDER BY full_name")
+    res.json(staff)
+  } catch (error) {
+    console.error("Error fetching staff members:", error)
+    res.status(500).json({ message: "Server error" })
+  }
+})
+
+async function sendOTPEmail(email, otp, name = "User") {
+  try {
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Password Reset OTP - Sample Storage System",
+      text: `Your OTP for password reset is: ${otp} (valid for 15 minutes)`,
+      html: `
+                <h2>Password Reset Request</h2>
+                <p>Hello ${name},</p>
+                <p>You have requested to reset your password. Please use the following OTP to verify your identity:</p>
+                <h3 style="color: #4361ee; font-size: 24px; letter-spacing: 2px;">${otp}</h3>
+                <p>This OTP will expire in 15 minutes.</p>
+                <p>If you didn't request this, please ignore this email.</p>
+                <br>
+                <p>Best regards,<br>Sample Storage System Team</p>
+            `,
+    }
+
+    await transporter.sendMail(mailOptions)
+  } catch (error) {
+    console.error("Error sending email:", error)
+    throw error
+  }
+}
+
+async function sendOTPSMS(phoneNumber, otp) {
+  console.log(`SMS OTP for ${phoneNumber}: ${otp}`);
+}
+
+app.post("/logout", (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error("Logout error:", err)
+      return res.status(500).send("Error during logout")
+    }
+    res.redirect("/login?message=You have been logged out")
+  })
+})
+
+app.use((err, req, res, next) => {
+  console.error("Unhandled error:", err)
+  res.status(500).send("Internal server error")
+})
+
+app.use((req, res) => {
+  res.status(404).send("Page not found")
+})
+
+const PORT = process.env.PORT || 3000
+
+const server = app.listen(PORT, (err) => {
+  if (err) {
+    console.error("Failed to start server:", err)
+    process.exit(1)
+  }
+  console.log(`Server running on port ${PORT}`);
+})
+
+server.on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(`Port ${PORT} is already in use. Please try a different port or stop the other process.`)
+  } else {
+    console.error("Server error:", err)
+  }
+  process.exit(1)
+})
+
+process.on("SIGTERM", () => {
+  console.log("SIGTERM received, shutting down gracefully");
+  server.close(() => {
+    console.log("Process terminated");
+    db.end()
+  })
+})
+
+process.on("SIGINT", () => {
+  console.log("SIGINT received, shutting down gracefully");
+  server.close(() => {
+    console.log("Process terminated");
+    db.end()
+  })
+})

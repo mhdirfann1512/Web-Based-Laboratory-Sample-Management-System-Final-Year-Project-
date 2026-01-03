@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Samples - Sample Storage System</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+       /* Base container */
+.samples-container {
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+/* Filters Section */
+.filters-section {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.filter-group label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.search-bar {
+    position: relative;
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 2.5rem;
+    border: 2px solid var(--border-color);
+    border-radius: 25px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+}
+
+.search-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+}
+
+.filter-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* Stats Cards */
+.samples-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border-left: 4px solid var(--primary-color);
+    text-align: center;
+}
+
+.stat-card.active { border-left-color: var(--success-color); }
+.stat-card.disposed { border-left-color: var(--danger-color); }
+.stat-card.expired { border-left-color: var(--warning-color); }
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    color: var(--primary-color);
+}
+
+.stat-card.active .stat-number { color: var(--success-color); }
+.stat-card.disposed .stat-number { color: var(--danger-color); }
+.stat-card.expired .stat-number { color: var(--warning-color); }
+
+.stat-label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* Table styles */
+.samples-table-container {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.table-header {
+    background: var(--primary-color);
+    color: white;
+    padding: 1.5rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.table-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.table-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.samples-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.samples-table th,
+.samples-table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.samples-table th {
+    background: var(--background-light);
+    font-weight: 600;
+    color: var(--text-primary);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.samples-table tbody tr:hover {
+    background: var(--background-light);
+}
+
+.sample-id {
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+/* Status badges */
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.status-active { background: #d1fae5; color: #065f46; }
+.status-disposed { background: #fee2e2; color: #991b1b; }
+.status-expired { background: #fef3c7; color: #92400e; }
+
+/* Buttons */
+.action-buttons { display: flex; gap: 0.5rem; }
+
+.btn-small {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.8rem;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-view { background: var(--primary-color); color: white; }
+.btn-view:hover { background: var(--primary-dark); }
+
+.btn-edit { background: var(--warning-color); color: white; }
+.btn-edit:hover { background: #d97706; }
+
+.btn-dispose { background: var(--danger-color); color: white; }
+.btn-dispose:hover { background: #dc2626; }
+
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    padding: 2rem;
+    background: var(--background-light);
+}
+
+.pagination button {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    background: white;
+    color: var(--text-primary);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.pagination button:hover:not(:disabled) {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.pagination button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination .current-page {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+/* Empty & loading state */
+.empty-state,
+.loading {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-secondary);
+}
+
+.empty-state i,
+.loading i {
+    font-size: 2rem;
+    opacity: 0.5;
+}
+
+.loading i {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    background: white;
+    margin: 5% auto;
+    padding: 2rem;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.modal-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin: 0;
+}
+
+.close {
+    color: var(--text-secondary);
+    font-size: 2rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.close:hover {
+    color: var(--danger-color);
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+.detail-item {
+    background: var(--background-light);
+    padding: 1rem;
+    border-radius: 8px;
+}
+
+.detail-label {
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.detail-value {
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+/* Admin-only items */
+.admin-only { display: none; }
+.admin-view .admin-only { display: block; }
+
+/* Mobile */
+@media (max-width: 768px) {
+    .filters-grid { grid-template-columns: 1fr; }
+    .filter-actions { flex-direction: column; align-items: stretch; }
+    .samples-table-container { overflow-x: auto; }
+    .samples-table { min-width: 800px; }
+    .table-actions, .action-buttons { flex-direction: column; gap: 0.5rem; }
+}
+
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="container">
+                <a href="/" class="logo">SampleStorage</a>
+                <div class="nav-links">
+                    <span class="user-info">
+                        <i class="fas fa-user-circle" id="userIcon"></i>
+                        <span id="userName">Loading...</span>
+                    </span>
+                    <a href="#" class="nav-link" id="dashboardLink">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                    <a href="/profile" class="nav-link">
+                        <i class="fas fa-user"></i> Profile
+                    </a>
+                    <a href="/logout" class="nav-link">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container">
+        <div class="samples-container">
+            <div class="page-header">
+                <h1><i class="fas fa-vials"></i> Sample Management</h1>
+                <p id="pageDescription"></p>
+            </div>
+
+            <div id="message" class="alert" style="display: none;"></div>
+
+            <!-- Statistics Cards -->
+            <div class="samples-stats" id="samplesStats">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalSamples">0</div>
+                    <div class="stat-label">Total Samples</div>
+                </div>
+                <div class="stat-card active">
+                    <div class="stat-number" id="activeSamples">0</div>
+                    <div class="stat-label">Active Samples</div>
+                </div>
+                <div class="stat-card disposed">
+                    <div class="stat-number" id="disposedSamples">0</div>
+                    <div class="stat-label">Disposed Samples</div>
+                </div>
+                <div class="stat-card expired">
+                    <div class="stat-number" id="expiredSamples">0</div>
+                    <div class="stat-label">Expired Samples</div>
+                </div>
+            </div>
+
+            <!-- Filters Section -->
+            <div class="filters-section card">
+                <h3 style="margin: 0 0 1.5rem 0; color: var(--primary-color);">
+                    <i class="fas fa-filter"></i> Search & Filter Samples
+                </h3>
+                
+                <div class="filters-grid">
+                    <div class="filter-group">
+                        <label for="searchInput">Search Samples</label>
+                        <div class="search-bar">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" id="searchInput" class="search-input" 
+                                   placeholder="Search by Sample ID, Patient Name, or Patient ID...">
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="statusFilter">Status</label>
+                        <select id="statusFilter" class="form-control">
+                            <option value="">All Statuses</option>
+                            <option value="active">Active</option>
+                            <option value="disposed">Disposed</option>
+                            <option value="expired">Expired</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="sampleTypeFilter">Sample Type</label>
+                        <select id="sampleTypeFilter" class="form-control">
+                            <option value="">All Types</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="dateFromFilter">Date From</label>
+                        <input type="date" id="dateFromFilter" class="form-control">
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="dateToFilter">Date To</label>
+                        <input type="date" id="dateToFilter" class="form-control">
+                    </div>
+
+                    <div class="filter-group admin-only">
+                        <label for="staffFilter">Registered By</label>
+                        <select id="staffFilter" class="form-control">
+                            <option value="">All Staff</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="filter-actions">
+                    <button class="btn btn-primary" onclick="applyFilters()">
+                        <i class="fas fa-search"></i> Apply Filters
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearFilters()">
+                        <i class="fas fa-times"></i> Clear Filters
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportSamples()">
+                        <i class="fas fa-download"></i> Export Data
+                    </button>
+                    <div class="admin-only">
+                        <button class="btn btn-success" onclick="window.location.href='/register-sample'">
+                            <i class="fas fa-plus"></i> Register New Sample
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Samples Table -->
+            <div class="samples-table-container">
+                <div class="table-header">
+                    <h3 class="table-title">
+                        <i class="fas fa-list"></i> Sample Records
+                        <span id="resultsCount">(0 samples)</span>
+                    </h3>
+                    <div class="table-actions">
+                        <select id="itemsPerPage" class="form-control" style="width: auto;">
+                            <option value="10">10 per page</option>
+                            <option value="25">25 per page</option>
+                            <option value="50">50 per page</option>
+                            <option value="100">100 per page</option>
+                        </select>
+                        <button class="btn btn-secondary btn-small" onclick="refreshSamples()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <div id="tableContent">
+                    <div class="loading">
+                        <i class="fas fa-spinner"></i>
+                        <p>Loading samples...</p>
+                    </div>
+                </div>
+
+                <div class="pagination" id="pagination" style="display: none;">
+                    <button id="prevPage" onclick="changePage(-1)">
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </button>
+                    <span id="pageInfo">Page 1 of 1</span>
+                    <button id="nextPage" onclick="changePage(1)">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Sample Details Modal -->
+    <div id="sampleModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Sample Details</h2>
+                <span class="close" onclick="closeSampleModal()">&times;</span>
+            </div>
+            <div id="sampleDetails">
+                <!-- Sample details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let allSamples = [];
+        let filteredSamples = [];
+        let currentPage = 1;
+        let itemsPerPage = 10;
+        let sampleTypes = [];
+        let staffMembers = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadUserProfile();
+            await loadSampleTypes();
+            await loadStaffMembers();
+            await loadSamples();
+            
+            // Set up event listeners
+            setupEventListeners();
+            
+            // Set default date range (last 30 days)
+            const today = new Date();
+            const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+            document.getElementById('dateToFilter').value = today.toISOString().split('T')[0];
+            document.getElementById('dateFromFilter').value = thirtyDaysAgo.toISOString().split('T')[0];
+        });
+
+        async function loadUserProfile() {
+            try {
+                const response = await fetch('/api/profile');
+                if (!response.ok) throw new Error('Failed to load profile');
+                
+                currentUser = await response.json();
+                
+                // Update UI based on user type
+                document.getElementById('userName').textContent = currentUser.full_name || 'User';
+                
+                if (currentUser.staff_id) {
+                    // Staff user
+                    document.getElementById('userIcon').className = 'fas fa-user-circle';
+                    document.getElementById('dashboardLink').href = '/staff-dashboard';
+                    
+                } else {
+                    // Admin user
+                    document.getElementById('userIcon').className = 'fas fa-user-shield';
+                    document.getElementById('dashboardLink').href = '/admin-dashboard';
+                    document.getElementById('pageDescription').textContent = 'View and manage all samples in the system';
+                    document.body.classList.add('admin-view');
+                }
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                window.location.href = '/login';
+            }
+        }
+
+        async function loadSampleTypes() {
+            try {
+                const response = await fetch('/api/sample-types');
+                if (response.ok) {
+                    sampleTypes = await response.json();
+                    const select = document.getElementById('sampleTypeFilter');
+                    sampleTypes.forEach(type => {
+                        const option = document.createElement('option');
+                        option.value = type.type_id;
+                        option.textContent = type.type_name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading sample types:', error);
+            }
+        }
+
+        async function loadStaffMembers() {
+            try {
+                // Only load for admin users
+                if (!currentUser || currentUser.staff_id) return;
+                
+                const response = await fetch('/api/admin/staff-members');
+                if (response.ok) {
+                    staffMembers = await response.json();
+                    const select = document.getElementById('staffFilter');
+                    staffMembers.forEach(staff => {
+                        const option = document.createElement('option');
+                        option.value = staff.staff_id;
+                        option.textContent = staff.full_name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading staff members:', error);
+            }
+        }
+
+        async function loadSamples() {
+            try {
+                console.log('🔍 Loading samples...');
+                const response = await fetch('/api/samples');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('✅ Samples loaded:', data);
+                
+                allSamples = data;
+                filteredSamples = [...allSamples];
+                
+                updateStatistics();
+                displaySamples();
+                
+            } catch (error) {
+                console.error('❌ Error loading samples:', error);
+                document.getElementById('tableContent').innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>Error Loading Samples</h3>
+                        <p>Unable to load sample data: ${error.message}</p>
+                        <button class="btn btn-primary" onclick="loadSamples()">
+                            <i class="fas fa-sync-alt"></i> Retry
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        function updateStatistics() {
+            const total = allSamples.length;
+            const active = allSamples.filter(s => s.status === 'active').length;
+            const disposed = allSamples.filter(s => s.status === 'disposed').length;
+            const expired = allSamples.filter(s => s.status === 'expired').length;
+            
+            document.getElementById('totalSamples').textContent = total;
+            document.getElementById('activeSamples').textContent = active;
+            document.getElementById('disposedSamples').textContent = disposed;
+            document.getElementById('expiredSamples').textContent = expired;
+        }
+
+        function displaySamples() {
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const paginatedSamples = filteredSamples.slice(startIndex, endIndex);
+            
+            document.getElementById('resultsCount').textContent = `(${filteredSamples.length} samples)`;
+            
+            if (paginatedSamples.length === 0) {
+                document.getElementById('tableContent').innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-vials"></i>
+                        <h3>No Samples Found</h3>
+                        <p>No samples match your current filters. Try adjusting your search criteria.</p>
+                        <button class="btn btn-primary" onclick="clearFilters()">
+                            <i class="fas fa-times"></i> Clear Filters
+                        </button>
+                    </div>
+                `;
+                document.getElementById('pagination').style.display = 'none';
+                return;
+            }
+            
+            const tableHTML = `
+    <table class="samples-table">
+        <thead>
+            <tr>
+                <th>Sample ID</th>
+                <th>Patient Name</th>
+                <th>Patient ID</th>
+                <th>Sample Type</th>
+                <th>Test Type</th>
+                <th>Status</th>
+                <th>Collection Date</th>
+                <th>Registration Date</th>
+                <th class="admin-only">Registered By</th>
+                <th>Storage Location</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${paginatedSamples.map(sample => `
+                <tr>
+                    <td><span class="sample-id">${sample.sample_id}</span></td>
+                    <td>${sample.patient_name || 'N/A'}</td>
+                    <td>${sample.patient_id || 'N/A'}</td>
+                    <td>${sample.sample_type_name || 'N/A'}</td>
+                    <td>${sample.test_name || 'N/A'}</td>
+                    <td><span class="status-badge status-${sample.status}">${sample.status}</span></td>
+                    <td>${formatDate(sample.collection_date)}</td>
+                    <td>${formatDate(sample.registration_date)}</td>
+                    <td class="admin-only">${sample.staff_name || 'N/A'}</td>
+                    <td>${sample.storage_name || 'N/A'}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn-small btn-view" onclick="viewSample('${sample.sample_id}')">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                            ${sample.status === 'active' ? `
+                                <button class="btn-small btn-dispose" onclick="disposeSample('${sample.sample_id}')">
+                                    <i class="fas fa-trash"></i> Dispose
+                                </button>
+                            ` : ''}
+                        </div>
+                    </td>
+                </tr>
+            `).join('')}
+        </tbody>
+    </table>
+`;
+            
+            document.getElementById('tableContent').innerHTML = tableHTML;
+            
+            // Update pagination
+            updatePagination();
+        }
+
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredSamples.length / itemsPerPage);
+            
+            if (totalPages <= 1) {
+                document.getElementById('pagination').style.display = 'none';
+                return;
+            }
+            
+            document.getElementById('pagination').style.display = 'flex';
+            document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages}`;
+            document.getElementById('prevPage').disabled = currentPage === 1;
+            document.getElementById('nextPage').disabled = currentPage === totalPages;
+        }
+
+        function changePage(direction) {
+            const totalPages = Math.ceil(filteredSamples.length / itemsPerPage);
+            const newPage = currentPage + direction;
+            
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentPage = newPage;
+                displaySamples();
+            }
+        }
+
+        function applyFilters() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+            const typeFilter = document.getElementById('sampleTypeFilter').value;
+            const dateFrom = document.getElementById('dateFromFilter').value;
+            const dateTo = document.getElementById('dateToFilter').value;
+            const staffFilter = document.getElementById('staffFilter').value;
+            
+            filteredSamples = allSamples.filter(sample => {
+                // Search filter
+                if (searchTerm && !sample.sample_id.toLowerCase().includes(searchTerm) &&
+                    !sample.patient_name.toLowerCase().includes(searchTerm) &&
+                    !sample.patient_id.toLowerCase().includes(searchTerm)) {
+                    return false;
+                }
+                
+                // Status filter
+                if (statusFilter && sample.status !== statusFilter) {
+                    return false;
+                }
+                
+                // Type filter
+                if (typeFilter && sample.sample_type_id != typeFilter) {
+                    return false;
+                }
+                
+                // Date filters
+                if (dateFrom && new Date(sample.registration_date) < new Date(dateFrom)) {
+                    return false;
+                }
+                if (dateTo && new Date(sample.registration_date) > new Date(dateTo + 'T23:59:59')) {
+                    return false;
+                }
+                
+                // Staff filter (admin only)
+                if (staffFilter && sample.staff_id != staffFilter) {
+                    return false;
+                }
+                
+                return true;
+            });
+            
+            currentPage = 1;
+            displaySamples();
+        }
+
+        function clearFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('sampleTypeFilter').value = '';
+            document.getElementById('dateFromFilter').value = '';
+            document.getElementById('dateToFilter').value = '';
+            document.getElementById('staffFilter').value = '';
+            
+            filteredSamples = [...allSamples];
+            currentPage = 1;
+            displaySamples();
+        }
+
+        async function viewSample(sampleId) {
+            try {
+                const response = await fetch(`/api/samples/${sampleId}`);
+                if (!response.ok) throw new Error('Failed to load sample details');
+                
+                const sample = await response.json();
+                
+                const detailsHTML = `
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">Sample ID</div>
+                            <div class="detail-value sample-id">${sample.sample_id}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Status</div>
+                            <div class="detail-value">
+                                <span class="status-badge status-${sample.status}">${sample.status}</span>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Patient Name</div>
+                            <div class="detail-value">${sample.patient_name}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Patient ID</div>
+                            <div class="detail-value">${sample.patient_id}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Sample Type</div>
+                            <div class="detail-value">${sample.sample_type_name || 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Test Type</div>
+                            <div class="detail-value">${sample.test_name || 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Collection Date</div>
+                            <div class="detail-value">${formatDate(sample.collection_date)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Registration Date</div>
+                            <div class="detail-value">${formatDateTime(sample.registration_date)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Storage Location</div>
+                            <div class="detail-value">${sample.storage_name || 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Freezer Assignment</div>
+                            <div class="detail-value">${sample.freezer_name || 'N/A'}</div>
+                        </div>
+                        <div class="detail-item admin-only">
+                            <div class="detail-label">Registered By</div>
+                            <div class="detail-value">${sample.staff_name || 'N/A'}</div>
+                        </div>
+                        ${sample.notes ? `
+                            <div class="detail-item" style="grid-column: 1 / -1;">
+                                <div class="detail-label">Notes</div>
+                                <div class="detail-value">${sample.notes}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    ${sample.status === 'active' ? `
+                        <div style="margin-top: 2rem; text-align: center;">
+                            <button class="btn btn-danger" onclick="disposeSample('${sample.sample_id}'); closeSampleModal();">
+                                <i class="fas fa-trash"></i> Dispose Sample
+                            </button>
+                        </div>
+                    ` : ''}
+                `;
+                
+                document.getElementById('sampleDetails').innerHTML = detailsHTML;
+                document.getElementById('sampleModal').style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error loading sample details:', error);
+                showMessage('Error loading sample details', true);
+            }
+        }
+
+        function closeSampleModal() {
+            document.getElementById('sampleModal').style.display = 'none';
+        }
+
+        async function disposeSample(sampleId) {
+            if (!confirm(`Are you sure you want to dispose sample ${sampleId}? This action cannot be undone.`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/samples/${sampleId}/dispose`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (!response.ok) throw new Error('Failed to dispose sample');
+                
+                showMessage(`Sample ${sampleId} has been disposed successfully`, false);
+                await loadSamples(); // Reload samples
+                
+            } catch (error) {
+                console.error('Error disposing sample:', error);
+                showMessage('Error disposing sample', true);
+            }
+        }
+
+        function refreshSamples() {
+            loadSamples();
+        }
+
+        function exportSamples() {
+            // Create CSV content
+            const headers = ['Sample ID', 'Patient Name', 'Patient ID', 'Sample Type', 'Test Type', 'Status', 'Collection Date', 'Registration Date', 'Storage Location'];
+            if (!currentUser.staff_id) {
+                headers.push('Registered By');
+            }
+            
+            const csvContent = [
+                headers.join(','),
+                ...filteredSamples.map(sample => [
+                    sample.sample_id,
+                    `"${sample.patient_name}"`,
+                    sample.patient_id,
+                    `"${sample.sample_type_name || 'N/A'}"`,
+                    `"${sample.test_name || 'N/A'}"`,
+                    sample.status,
+                    formatDate(sample.collection_date),
+                    formatDate(sample.registration_date),
+                    `"${sample.storage_name || 'N/A'}"`,
+                    ...(currentUser.staff_id ? [] : [`"${sample.staff_name || 'N/A'}"`])
+                ].join(','))
+            ].join('\n');
+            
+            // Download CSV
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `samples_export_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        function setupEventListeners() {
+            // Search input with debounce
+            let searchTimeout;
+            document.getElementById('searchInput').addEventListener('input', () => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(applyFilters, 300);
+            });
+            
+            // Filter changes
+            document.getElementById('statusFilter').addEventListener('change', applyFilters);
+            document.getElementById('sampleTypeFilter').addEventListener('change', applyFilters);
+            document.getElementById('dateFromFilter').addEventListener('change', applyFilters);
+            document.getElementById('dateToFilter').addEventListener('change', applyFilters);
+            document.getElementById('staffFilter').addEventListener('change', applyFilters);
+            
+            // Items per page
+            document.getElementById('itemsPerPage').addEventListener('change', (e) => {
+                itemsPerPage = parseInt(e.target.value);
+                currentPage = 1;
+                displaySamples();
+            });
+            
+            // Close modal when clicking outside
+            window.addEventListener('click', (e) => {
+                if (e.target === document.getElementById('sampleModal')) {
+                    closeSampleModal();
+                }
+            });
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            return new Date(dateString).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+
+        function formatDateTime(dateString) {
+            if (!dateString) return 'N/A';
+            return new Date(dateString).toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function showMessage(message, isError = true) {
+            const messageDiv = document.getElementById('message');
+            if (!messageDiv) return;
+
+            messageDiv.textContent = message;
+            messageDiv.style.display = 'block';
+            messageDiv.className = isError ? 'alert alert-error' : 'alert alert-success';
+
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+    <script src="/js/script.js"></script>
+</body>
+</html>

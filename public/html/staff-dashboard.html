@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Staff Dashboard - Sample Storage System</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/profile.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #f8f9fa;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .nav-link {
+      color: #495057;
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.3s ease;
+    }
+
+    .nav-link:hover {
+      color: #007bff;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      font-size: 0.9rem;
+      color: #495057;
+    }
+
+    .user-info i {
+      margin-right: 0.5rem;
+    }
+
+    /* Main Dashboard Layout */
+    .dashboard-layout {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      height: calc(100vh - 60px);
+      gap: 0;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      background-color: #fff;
+      border-right: 1px solid #e9ecef;
+      padding: 1rem;
+      overflow-y: auto;
+    }
+
+    .card {
+      background-color: #fff;
+      border: 1px solid #e9ecef;
+      border-radius: 6px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .user-profile {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    .profile-avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      overflow: hidden;
+      margin: 0 auto 0.75rem;
+      background-color: #007bff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .profile-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .profile-avatar i {
+      font-size: 1.5rem;
+      color: white;
+    }
+
+    .profile-info h3 {
+      font-size: 1rem;
+      margin-bottom: 0.25rem;
+      color: #212529;
+    }
+
+    .profile-info p {
+      color: #6c757d;
+      font-size: 0.8rem;
+      margin-bottom: 0.1rem;
+    }
+
+    .quick-stats h4 {
+      font-size: 0.9rem;
+      margin-bottom: 0.75rem;
+      color: #212529;
+    }
+
+    .stat-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+      font-size: 0.8rem;
+    }
+
+    .stat-label {
+      color: #495057;
+    }
+
+    .stat-value {
+      font-weight: bold;
+      color: #007bff;
+    }
+
+    /* Main Content */
+    .main-content {
+      padding: 1.5rem;
+      overflow-y: auto;
+      background: url('/images/background.jpg') no-repeat center center fixed;
+     background-size: cover;
+    }
+
+    .page-header {
+      margin-bottom: 1.5rem;
+    }
+
+    .page-header h1 {
+  color: #ffffff; /* Use white or light color for glow */
+  font-size: 3rem;
+  margin-bottom: 0.25rem;
+  text-shadow: 0 0 5px #007bff, 0 0 10px #007bff, 0 0 20px #007bff;
+}
+
+    .page-header p {
+      color: #6c757d;
+      font-size: 0.95rem;
+    }
+
+    /* Action Grid */
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+      height: calc(100vh - 200px);
+    }
+
+    .action-card {
+      background-color: #fff;
+      border: 1px solid #e9ecef;
+      border-radius: 8px;
+      padding: 1.5rem;
+      text-align: center;
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .action-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      border-color: #007bff;
+    }
+
+    .card-icon {
+      font-size: 2.5rem;
+      color: #007bff;
+      margin-bottom: 1rem;
+    }
+
+    .card-content h3 {
+      color: #212529;
+      font-size: 1.1rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .card-content p {
+      color: #6c757d;
+      font-size: 0.85rem;
+      margin-bottom: 1.25rem;
+      line-height: 1.4;
+    }
+
+    .btn {
+      padding: 0.6rem 1.25rem;
+      border: none;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .btn-primary {
+      background: #007bff;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #0056b3;
+      color: white;
+      text-decoration: none;
+    }
+
+    /* Alerts */
+    .alert {
+      padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+
+    .alert-success {
+      color: #155724;
+      background-color: #d4edda;
+      border-color: #c3e6cb;
+    }
+
+    .alert-error {
+      color: #721c24;
+      background-color: #f8d7da;
+      border-color: #f5c6cb;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+      .dashboard-layout {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+      }
+
+      .sidebar {
+        border-right: none;
+        border-bottom: 1px solid #e9ecef;
+        padding: 1rem;
+      }
+
+      .action-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        height: auto;
+      }
+
+      .main-content {
+        padding: 1rem;
+      }
+    }
+
+    @media (max-width: 992px) and (min-width: 769px) {
+      .action-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+      <nav class="navbar">
+          <div class="container">
+              <a href="/" class="logo">SampleStorage</a>
+              <div class="nav-links">
+                  <span class="user-info">
+                      <i class="fas fa-user-circle"></i>
+                      <span id="staffName">Loading...</span>
+                  </span>
+                  <a href="/profile" class="nav-link">
+                      <i class="fas fa-user"></i> Profile
+                  </a>
+                  <a href="/logout" class="nav-link logout-btn">
+                      <i class="fas fa-sign-out-alt"></i> Logout
+                  </a>
+              </div>
+          </div>
+      </nav>
+  </header>
+
+  <main>
+      <div class="dashboard-layout">
+          <!-- Sidebar -->
+          <aside class="sidebar">
+              <div class="user-profile card">
+                  <div class="avatar-container">
+                    <img id="profilePicture" src="/images/default-avatar.png" alt="Profile Picture" class="profile-avatar">
+                  </div>
+                  <div class="profile-info">
+                      <h3 id="staffNameSidebar">Loading...</h3>
+                      <p id="staffPosition">Staff Member</p>
+                      <p id="staffId">ID: Loading...</p>
+                      <p id="staffDepartment">Department: Loading...</p>
+                  </div>
+              </div>
+
+              <div class="quick-stats card">
+                  <h4>Quick Stats</h4>
+                  <div class="stat-item">
+                      <span class="stat-label">Samples Registered:</span>
+                      <span class="stat-value" id="samplesRegistered">0</span>
+                  </div>
+                  <div class="stat-item">
+                      <span class="stat-label">Samples Disposed:</span>
+                      <span class="stat-value" id="samplesDisposed">0</span>
+                  </div>
+                  <div class="stat-item">
+                      <span class="stat-label">Completion Rate:</span>
+                      <span class="stat-value" id="completionRate">0%</span>
+                  </div>
+              </div>
+          </aside>
+
+          <!-- Main Content -->
+          <div class="main-content">
+              <div class="page-header">
+                  <h1>Staff Dashboard</h1>
+
+              </div>
+
+              <div id="message" class="alert" style="display: none;"></div>
+
+              <!-- Action Cards -->
+              <div class="action-grid">
+                  <div class="action-card">
+                      <div class="card-icon">
+                          <i class="fas fa-vial"></i>
+                      </div>
+                      <div class="card-content">
+                          <h3>Register New Sample</h3>
+                          <p>Add new pathology specimens to the system with complete documentation and tracking information.</p>
+                          <a href="/register-sample" class="btn btn-primary">
+                              <i class="fas fa-plus"></i> Add Sample
+                          </a>
+                      </div>
+                  </div>
+
+                  <div class="action-card">
+                      <div class="card-icon">
+                          <i class="fas fa-search"></i>
+                      </div>
+                      <div class="card-content">
+                          <h3>View Samples</h3>
+                          <p>Access and manage existing specimen records with advanced search and filtering capabilities.</p>
+                          <a href="/view-samples" class="btn btn-primary">
+                              <i class="fas fa-eye"></i> View Samples
+                          </a>
+                      </div>
+                  </div>
+
+                  <div class="action-card">
+                      <div class="card-icon">
+                          <i class="fas fa-trash-alt"></i>
+                      </div>
+                      <div class="card-content">
+                          <h3>Dispose Samples</h3>
+                          <p>Record biohazard waste disposal with proper documentation and compliance tracking.</p>
+                          <a href="/dispose-samples" class="btn btn-primary">
+                              <i class="fas fa-recycle"></i> Dispose Samples
+                          </a>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+  </main>
+
+  <script>
+      // Check authentication
+      document.addEventListener('DOMContentLoaded', async () => {
+          try {
+              await loadStaffProfile();
+          } catch (error) {
+              console.error('Error loading dashboard:', error);
+              window.location.href = '/login';
+          }
+      });
+
+      async function loadStaffProfile() {
+          try {
+              const response = await fetch('/api/profile');
+              if (!response.ok) {
+                  throw new Error('Failed to load profile');
+              }
+              
+              const profile = await response.json();
+              
+              // Update profile information
+              document.getElementById('staffName').textContent = profile.full_name || 'Staff Member';
+              document.getElementById('staffNameSidebar').textContent = profile.full_name || 'Staff Member';
+              document.getElementById('staffPosition').textContent = profile.position || 'Staff Member';
+              document.getElementById('staffId').textContent = `ID: ${profile.staff_id || 'N/A'}`;
+              document.getElementById('staffDepartment').textContent = `Department: ${profile.department || 'N/A'}`;
+              
+              // Update profile picture
+                const profilePicture = document.getElementById('profilePicture');
+                if (profile.profile_picture) {
+                    profilePicture.src = profile.profile_picture;
+                } else {
+                    profilePicture.src = '/images/default-avatar.png';
+                }
+              
+              // Update stats
+              document.getElementById('samplesRegistered').textContent = profile.samples_registered || '0';
+              document.getElementById('samplesDisposed').textContent = profile.samples_disposed || '0';
+              
+              const completionRate = profile.samples_registered > 0 
+                  ? Math.round((profile.samples_disposed / profile.samples_registered) * 100)
+                  : 0;
+              document.getElementById('completionRate').textContent = `${completionRate}%`;
+              
+          } catch (error) {
+              console.error('Error loading profile:', error);
+              showMessage('Error loading profile information', true);
+          }
+      }
+
+      function showMessage(message, isError = true) {
+          const messageDiv = document.getElementById('message');
+          if (!messageDiv) return;
+
+          messageDiv.textContent = message;
+          messageDiv.style.display = 'block';
+          messageDiv.className = isError ? 'alert alert-error' : 'alert alert-success';
+
+          setTimeout(() => {
+              messageDiv.style.display = 'none';
+          }, 5000);
+      }
+  </script>
+  <script src="/js/script.js"></script>
+</body>
+</html>

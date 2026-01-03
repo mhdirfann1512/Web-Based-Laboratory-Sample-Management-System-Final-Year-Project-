@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Ranking - Sample Storage System</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/profile.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .ranking-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .ranking-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .ranking-header h1 {
+             color: #ffffff;
+            text-shadow: 0 0 5px #007bff, 0 0 10px #007bff, 0 0 20px #007bff;
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+
+        .ranking-header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .ranking-filters {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            border: 2px solid var(--primary-color);
+            background: white;
+            color: var(--primary-color);
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .filter-btn.active,
+        .filter-btn:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .ranking-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .ranking-item {
+            background: rgb(255, 255, 255);
+            backdrop-filter: blur(20px);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+        }
+
+        .ranking-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .ranking-item.current-user {
+            border: 2px solid var(--primary-color);
+            background: linear-gradient(135deg, rgba(67, 98, 238, 0.471), rgba(5, 40, 197, 0.427));
+        }
+
+        .ranking-position {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: rgb(0, 0, 0);
+            flex-shrink: 0;
+        }
+
+        .ranking-position.gold {
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+        }
+
+        .ranking-position.silver {
+            background: linear-gradient(135deg, #C0C0C0, #A8A8A8);
+            box-shadow: 0 4px 15px rgba(192, 192, 192, 0.3);
+        }
+
+        .ranking-position.bronze {
+            background: linear-gradient(135deg, #CD7F32, #B8860B);
+            box-shadow: 0 4px 15px rgba(205, 127, 50, 0.3);
+        }
+
+        .ranking-position.regular {
+            background: var(--primary-color);
+        }
+
+        .staff-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .staff-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .staff-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 0.25rem;
+        }
+
+        .staff-department {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .staff-stats {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 80px;
+        }
+
+        .stat-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .performance-score {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+            background: var(--background-light);
+            border-radius: 8px;
+            min-width: 100px;
+        }
+
+        .score-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .score-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .current-user-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: var(--primary-color);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .loading-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+            margin-bottom: 1rem;
+            transition: color 0.3s ease;
+        }
+
+        .back-button:hover {
+            color: var(--primary-dark);
+        }
+
+        @media (max-width: 768px) {
+            .ranking-item {
+                flex-direction: column;
+                text-align: center;
+                gap: 1rem;
+            }
+
+            .staff-stats {
+                justify-content: center;
+            }
+
+            .ranking-filters {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="navbar container">
+            <a href="/" class="logo">SampleStorage</a>
+            <div class="nav-links">
+                <span class="user-info">
+                    <i class="fas fa-user-circle"></i>
+                    <span id="staffName">Loading...</span>
+                </span>
+                <a href="/profile" class="nav-link">
+                      <i class="fas fa-user"></i> Profile
+                  </a>
+                <a href="/staff-dashboard" class="nav-link">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+                <a href="/logout" class="nav-link logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="ranking-container">
+        <div class="ranking-header">
+            <h1><i class="fas fa-trophy"></i> Staff Performance Ranking</h1>
+        </div>
+
+        <div class="ranking-filters">
+            <button class="filter-btn" data-filter="all">All Staff</button>
+            <button class="filter-btn" data-filter="top10">Top 10</button>
+        </div>
+
+        <div id="loadingState" class="loading-state">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p>Loading staff rankings...</p>
+        </div>
+
+        <div id="rankingList" class="ranking-list" style="display: none;">
+            <!-- Rankings will be populated here -->
+        </div>
+
+        <div id="noDataState" class="no-data" style="display: none;">
+            <i class="fas fa-users fa-2x"></i>
+            <p>No staff data available</p>
+        </div>
+    </main>
+
+    <script>
+        let allStaffData = [];
+        let currentUser = null;
+        let currentFilter = 'all';
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadCurrentUser();
+            await loadStaffRankings();
+            setupFilterButtons();
+        });
+
+        async function loadCurrentUser() {
+            try {
+                const response = await fetch('/api/profile');
+                if (response.ok) {
+                    currentUser = await response.json();
+                    document.getElementById('staffName').textContent = currentUser.full_name || 'Staff Member';
+                }
+            } catch (error) {
+                console.error('Error loading current user:', error);
+            }
+        }
+
+        async function loadStaffRankings() {
+            try {
+                const response = await fetch('/api/staff-rankings');
+                if (!response.ok) {
+                    throw new Error('Failed to load rankings');
+                }
+
+                allStaffData = await response.json();
+                displayRankings(allStaffData);
+            } catch (error) {
+                console.error('Error loading staff rankings:', error);
+                showNoDataState();
+            }
+        }
+
+        function displayRankings(staffData) {
+            const loadingState = document.getElementById('loadingState');
+            const rankingList = document.getElementById('rankingList');
+            const noDataState = document.getElementById('noDataState');
+
+            loadingState.style.display = 'none';
+            noDataState.style.display = 'none';
+
+            if (!staffData || staffData.length === 0) {
+                showNoDataState();
+                return;
+            }
+
+            // Sort by performance score (descending)
+            const sortedStaff = [...staffData].sort((a, b) => b.performance_score - a.performance_score);
+
+            rankingList.innerHTML = sortedStaff.map((staff, index) => {
+                const position = index + 1;
+                const isCurrentUser = currentUser && staff.staff_id === currentUser.staff_id;
+                
+                return `
+                    <div class="ranking-item ${isCurrentUser ? 'current-user' : ''}">
+                        ${isCurrentUser ? '<div class="current-user-badge">You</div>' : ''}
+                        
+                        <div class="ranking-position ${getPositionClass(position)}">
+                            ${position <= 3 ? getPositionIcon(position) : position}
+                        </div>
+
+                        <img src="${staff.profile_picture || '/images/default-avatar.png'}" 
+                             alt="${staff.full_name}" 
+                             class="staff-avatar">
+
+                        <div class="staff-info">
+                            <div class="staff-name">${staff.full_name}</div>
+                            <div class="staff-department">${staff.department || 'N/A'}</div>
+                            
+                            <div class="staff-stats">
+                                <div class="stat-item">
+                                    <div class="stat-value">${staff.samples_registered}</div>
+                                    <div class="stat-label">Registered</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">${staff.samples_disposed}</div>
+                                    <div class="stat-label">Disposed</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">${staff.completion_rate}%</div>
+                                    <div class="stat-label">Completion</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="performance-score">
+                            <div class="score-value">${staff.performance_score}</div>
+                            <div class="score-label">Performance<br>Score</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            rankingList.style.display = 'flex';
+        }
+
+        function getPositionClass(position) {
+            switch(position) {
+                case 1: return 'gold';
+                case 2: return 'silver';
+                case 3: return 'bronze';
+                default: return 'regular';
+            }
+        }
+
+        function getPositionIcon(position) {
+            switch(position) {
+                case 1: return '<i class="fas fa-crown"></i>';
+                case 2: return '<i class="fas fa-medal"></i>';
+                case 3: return '<i class="fas fa-award"></i>';
+                default: return position;
+            }
+        }
+
+        function setupFilterButtons() {
+            const filterButtons = document.querySelectorAll('.filter-btn');
+            
+            filterButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // Update active button
+                    filterButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    
+                    // Apply filter
+                    const filter = button.dataset.filter;
+                    currentFilter = filter;
+                    applyFilter(filter);
+                });
+            });
+        }
+
+        function applyFilter(filter) {
+            let filteredData = [...allStaffData];
+
+            switch(filter) {
+                case 'department':
+                    if (currentUser && currentUser.department) {
+                        filteredData = filteredData.filter(staff => 
+                            staff.department === currentUser.department
+                        );
+                    }
+                    break;
+                case 'top10':
+                    filteredData = filteredData
+                        .sort((a, b) => b.performance_score - a.performance_score)
+                        .slice(0, 10);
+                    break;
+                case 'all':
+                default:
+                    // Show all staff
+                    break;
+            }
+
+            displayRankings(filteredData);
+        }
+
+        function showNoDataState() {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('rankingList').style.display = 'none';
+            document.getElementById('noDataState').style.display = 'block';
+        }
+    </script>
+    <script src="/js/script.js"></script>
+</body>
+</html>
